@@ -3,5 +3,5 @@
     <Platform Name="x64" />
     <Platform Name="x86" />
   </Configurations>
-  <Project Path="winkrnl.vcxproj" />
+  <Project Path="winkrnl.vcxproj" Id="10385194-fb79-4bda-95be-72c8b8b5652f" />
 </Solution>

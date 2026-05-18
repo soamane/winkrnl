@@ -1,13 +1,13 @@
 #include <filesystem>
 #include <print>
 
-#include "utils/fs_utils.hpp"
+#include <utils/fs_utils.hpp>
 
 int main(int argc, char** argv)
 {
     if (argc != 2) {
-        std::println("Usage: winkrnl.exe <driver_path>");
-        return 0;
+        std::println("Usage: {} <driver_path>", argv[0]);
+        return 1;
     }
 
     std::filesystem::path driverPath = argv[1];
@@ -30,7 +30,6 @@ int main(int argc, char** argv)
         std::println("[-] Failed to read bytes from driver's file");
         return 1;
     }
-
 
     return 0;
 }
