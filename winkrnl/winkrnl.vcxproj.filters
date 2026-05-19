@@ -33,6 +33,9 @@
     <ClCompile Include="src\vuln\service_registry.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
+    <ClCompile Include="src\vuln\drivers\basic_vuln_driver.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\utils\fs_utils.hpp">

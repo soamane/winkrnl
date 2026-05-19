@@ -154,6 +154,7 @@
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\utils\cmn_utils.cpp" />
     <ClCompile Include="src\utils\fs_utils.cpp" />
+    <ClCompile Include="src\vuln\drivers\basic_vuln_driver.cpp" />
     <ClCompile Include="src\vuln\drivers\iqvw64\iqvw64_driver.cpp" />
     <ClCompile Include="src\vuln\service_registry.cpp" />
     <ClCompile Include="src\vuln\vuln_driver_loader.cpp" />

@@ -17,6 +17,7 @@ VulnDriverLoader::VulnDriverLoader(std::unique_ptr<BasicVulnDriver> driver)
 
 VulnDriverLoader::~VulnDriverLoader()
 {
+    Unload();
 }
 
 bool VulnDriverLoader::Load()

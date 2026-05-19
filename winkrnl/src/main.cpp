@@ -40,7 +40,7 @@ int main(int argc, char** argv)
     //}
 
     VulnDriverLoader vulnDrvLoader = VulnDriverLoader(
-        std::make_unique<Iqvw64Driver>());
+        std::make_unique<Iqvw64Driver>("\\\\.\\Nal"));
 
     if (!vulnDrvLoader.Load()) {
         std::println("[-] Failed to load vulnerable driver");
