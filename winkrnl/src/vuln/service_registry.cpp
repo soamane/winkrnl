@@ -7,7 +7,7 @@
 
 ServiceRegistry::ServiceRegistry(const std::filesystem::path& drvPath)
     : drvPath(drvPath)
-    , svcName(Utils::Common::GenerateRandomString(16))
+    , svcName(drvPath.stem().string())
     , subKey("SYSTEM\\CurrentControlSet\\Services\\" + svcName)
 {
 }
