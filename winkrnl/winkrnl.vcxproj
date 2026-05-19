@@ -71,10 +71,10 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>src\;$(IncludePath)</IncludePath>
+    <IncludePath>src\;..\vendors\;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>src\;$(IncludePath)</IncludePath>
+    <IncludePath>src\;..\vendors\;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -155,7 +155,6 @@
     <ClCompile Include="src\vuln\vuln_driver_loader.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\ntdll.hpp" />
     <ClInclude Include="src\utils\cmn_utils.hpp" />
     <ClInclude Include="src\utils\fs_utils.hpp" />
     <ClInclude Include="src\vuln\drivers\basic_vuln_driver.hpp" />
