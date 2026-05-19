@@ -7,6 +7,9 @@
 
 class Iqvw64Driver : public BasicVulnDriver {
 public:
+    Iqvw64Driver(std::string_view symbLink);
+
+public:
     const std::vector<uint8_t>& GetData() const override;
 };
 
