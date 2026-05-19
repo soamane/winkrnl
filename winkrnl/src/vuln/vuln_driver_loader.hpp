@@ -5,6 +5,7 @@
 
 #include <filesystem>
 #include <memory>
+#include <ntdll.hpp>
 
 class BasicVulnDriver;
 class ServiceRegistry;
@@ -19,7 +20,11 @@ public:
     bool Unload();
 
 private:
-    std::filesystem::path tempPath;
+    std::wstring BuildNtPath() const;
+
+private:
+    std::filesystem::path drvPath;
+
     std::unique_ptr<BasicVulnDriver> driver;
     std::unique_ptr<ServiceRegistry> registry;
 };
