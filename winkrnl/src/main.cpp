@@ -47,6 +47,8 @@ int main(int argc, char** argv)
         return 1;
     }
 
+    std::println("[+] Driver successfully loaded");
+
     /*
         TODO: Manual mapping your driver...
     */
@@ -56,5 +58,6 @@ int main(int argc, char** argv)
         return 1;
     }
 
+    std::println("[+] Driver successfully unloaded");
     return 0;
 }
