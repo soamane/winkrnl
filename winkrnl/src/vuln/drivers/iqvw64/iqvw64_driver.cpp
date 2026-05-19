@@ -1,0 +1,8 @@
+#include "iqvw64_driver.hpp"
+
+#include "iqvw64_data.hpp"
+
+const std::vector<uint8_t>& Iqvw64Driver::GetData() const
+{
+    return iqvw64_data;
+}
