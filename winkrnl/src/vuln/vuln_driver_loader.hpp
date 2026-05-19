@@ -20,10 +20,8 @@ public:
     bool Unload();
 
 private:
-    std::wstring BuildNtPath() const;
-
-private:
-    std::filesystem::path drvPath;
+    const std::filesystem::path drvPath;
+    const std::wstring ntPath;
 
     std::unique_ptr<BasicVulnDriver> driver;
     std::unique_ptr<ServiceRegistry> registry;

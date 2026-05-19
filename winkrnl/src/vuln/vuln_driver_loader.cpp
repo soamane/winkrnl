@@ -9,6 +9,7 @@
 
 VulnDriverLoader::VulnDriverLoader(std::unique_ptr<BasicVulnDriver> driver)
     : drvPath(Utils::FS::GenerateRandomTempPath(".tmp"))
+    , ntPath(L"\\Registry\\Machine\\SYSTEM\\CurrentControlSet\\Services\\" + drvPath.stem().wstring())
     , driver(std::move(driver))
     , registry(std::make_unique<ServiceRegistry>(drvPath))
 {
@@ -31,7 +32,6 @@ bool VulnDriverLoader::Load()
     }
 
     UNICODE_STRING svcName;
-    const auto ntPath = BuildNtPath();
     RtlInitUnicodeString(&svcName, ntPath.c_str());
 
     NTSTATUS status = NtLoadDriver(&svcName);
@@ -39,12 +39,22 @@ bool VulnDriverLoader::Load()
         std::println("[-] NtLoadDriver failed: 0x{:08X}", static_cast<ULONG>(status));
         return false;
     }
+
+    if (!driver->OpenDevice()) {
+        std::println("[-] Failed to open driver device");
+        return false;
+    }
+
     return true;
 }
 
 bool VulnDriverLoader::Unload()
 {
-    const auto ntPath = BuildNtPath();
+    /*
+        Dont forgot close device handle before unload driver and remove file
+    */
+    driver->CloseDevice();
+
     UNICODE_STRING svcName;
     RtlInitUnicodeString(&svcName, ntPath.c_str());
 
@@ -59,13 +69,14 @@ bool VulnDriverLoader::Unload()
         return false;
     }
 
-    return std::filesystem::remove(drvPath);
-}
+    std::error_code ec;
+    std::filesystem::remove(drvPath, ec);
+    if (ec) {
+        std::println("[-] Failed to remove driver file: {}", ec.message());
+        return false;
+    }
 
-std::wstring VulnDriverLoader::BuildNtPath() const
-{
-    return L"\\Registry\\Machine\\SYSTEM\\CurrentControlSet\\Services\\"
-        + drvPath.stem().wstring();
+    return true;
 }
 
 bool EnableLoadPrivilege()
