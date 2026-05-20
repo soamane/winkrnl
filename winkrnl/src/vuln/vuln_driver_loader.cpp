@@ -8,7 +8,8 @@
 #include <windows.h>
 
 VulnDriverLoader::VulnDriverLoader(std::unique_ptr<BasicVulnDriver> driver)
-    : drvPath(Utils::FS::GenerateRandomTempPath(".tmp"))
+    : isLoaded(false)
+    , drvPath(Utils::FS::GenerateRandomTempPath(".tmp"))
     , ntPath(L"\\Registry\\Machine\\SYSTEM\\CurrentControlSet\\Services\\" + drvPath.stem().wstring())
     , driver(std::move(driver))
     , registry(std::make_unique<ServiceRegistry>(drvPath))
@@ -17,7 +18,9 @@ VulnDriverLoader::VulnDriverLoader(std::unique_ptr<BasicVulnDriver> driver)
 
 VulnDriverLoader::~VulnDriverLoader()
 {
-    Unload();
+    if (isLoaded) {
+        Unload();
+    }
 }
 
 bool VulnDriverLoader::Load()
@@ -46,16 +49,12 @@ bool VulnDriverLoader::Load()
         return false;
     }
 
+    isLoaded = true;
     return true;
 }
 
 bool VulnDriverLoader::Unload()
 {
-    /*
-        Dont forgot close device handle before unload driver and remove file
-    */
-    driver->CloseDevice();
-
     UNICODE_STRING svcName;
     RtlInitUnicodeString(&svcName, ntPath.c_str());
 
@@ -70,6 +69,8 @@ bool VulnDriverLoader::Unload()
         return false;
     }
 
+    driver->CloseDevice();
+
     std::error_code ec;
     std::filesystem::remove(drvPath, ec);
     if (ec) {
@@ -77,6 +78,7 @@ bool VulnDriverLoader::Unload()
         return false;
     }
 
+    isLoaded = false;
     return true;
 }
 

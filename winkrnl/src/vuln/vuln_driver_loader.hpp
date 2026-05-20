@@ -20,6 +20,8 @@ public:
     bool Unload();
 
 private:
+    bool isLoaded;
+
     const std::filesystem::path drvPath;
     const std::wstring ntPath;
 

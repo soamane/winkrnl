@@ -1,6 +1,6 @@
 #include "iqvw64_driver.hpp"
 
-#include "iqvw64_data.hpp"
+#include <vulnerables/iqvw64_data.hpp>
 
 Iqvw64Driver::Iqvw64Driver(std::string_view symbLink)
     : BasicVulnDriver(std::move(symbLink))
