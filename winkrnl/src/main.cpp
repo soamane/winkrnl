@@ -3,7 +3,8 @@
 #include <print>
 
 #include <utils/fs_utils.hpp>
-#include <vuln/drivers/iqvw64/iqvw64_driver.hpp>
+
+#include <vuln/drivers/iqvw64_driver.hpp>
 #include <vuln/vuln_driver_loader.hpp>
 
 int main(int argc, char** argv)
