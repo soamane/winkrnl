@@ -34,3 +34,13 @@ HANDLE BasicVulnDriver::GetDevice()
 {
     return hDevice;
 }
+
+bool BasicVulnDriver::ReadMemory(uintptr_t address, void* buffer, std::size_t size)
+{
+    return KeMemMove(reinterpret_cast<uintptr_t>(buffer), address, size);
+}
+
+bool BasicVulnDriver::WriteMemory(uintptr_t address, void* buffer, std::size_t size)
+{
+    return KeMemMove(address, reinterpret_cast<uintptr_t>(buffer), size);
+}

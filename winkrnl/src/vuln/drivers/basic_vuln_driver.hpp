@@ -22,6 +22,8 @@ public:
     virtual const std::vector<uint8_t>& GetData() const = 0;
 
 public:
+    virtual bool ReadMemory(uintptr_t address, void* buffer, std::size_t size);
+    virtual bool WriteMemory(uintptr_t address, void* buffer, std::size_t size);
     virtual bool KeMemMove(uintptr_t dist, uintptr_t src, std::size_t size) = 0;
 
 protected:
