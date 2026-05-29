@@ -1,5 +1,7 @@
 #include "basic_vuln_driver.hpp"
 
+#include <print>
+
 BasicVulnDriver::BasicVulnDriver(std::string_view symbLink)
     : hDevice(INVALID_HANDLE_VALUE)
     , init(false)

@@ -4,6 +4,7 @@
 #define BASIC_VULN_DRIVER_HPP
 
 #include <Windows.h>
+#include <print>
 #include <string>
 #include <vector>
 
@@ -25,15 +26,29 @@ public:
     virtual bool ReadMemory(uintptr_t address, void* buffer, std::size_t size);
     virtual bool WriteMemory(uintptr_t address, void* buffer, std::size_t size);
 
-protected:
+public:
     virtual bool KeMemMove(uintptr_t dist, uintptr_t src, std::size_t size) = 0;
+    virtual uintptr_t KeGetPhysicalAddress(uintptr_t vaddr) = 0;
 
 protected:
-    HANDLE hDevice;
+    template <typename T>
+    bool SendIoRequest(DWORD controlCode, const T& req);
 
 private:
+    HANDLE hDevice;
     bool init;
     const std::string symbLink;
 };
 
 #endif // !BASIC_VULN_DRIVER_HPP
+
+template <typename T>
+inline bool BasicVulnDriver::SendIoRequest(DWORD controlCode, const T& req)
+{
+    DWORD bytesReturned = 0;
+    if (!DeviceIoControl(hDevice, controlCode, const_cast<void*>(static_cast<const void*>(&req)), sizeof(req), nullptr, 0, &bytesReturned, nullptr)) {
+        std::println("[-] DeviceIoControl failed: 0x{:X}, bytes returned: {}", GetLastError(), bytesReturned);
+        return false;
+    }
+    return true;
+}

@@ -14,6 +14,7 @@ public:
 
 private:
     bool KeMemMove(uintptr_t dist, uintptr_t src, std::size_t size) override;
+    uintptr_t KeGetPhysicalAddress(uintptr_t vaddr) override;
 };
 
 #endif // !IQVW64_DRIVER_HPP
