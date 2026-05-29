@@ -19,6 +19,9 @@ public:
     bool Load();
     bool Unload();
 
+public:
+    BasicVulnDriver* GetDriver();
+
 private:
     bool isLoaded;
 

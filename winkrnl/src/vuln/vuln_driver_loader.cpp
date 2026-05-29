@@ -82,6 +82,11 @@ bool VulnDriverLoader::Unload()
     return true;
 }
 
+BasicVulnDriver* VulnDriverLoader::GetDriver()
+{
+    return driver.get();
+}
+
 bool EnableLoadPrivilege()
 {
     HANDLE hToken;
