@@ -8,8 +8,7 @@ std::filesystem::path Utils::FS::GenerateRandomTempPath(std::string_view extensi
     auto filename = Utils::Common::GenerateRandomString(16);
     filename += extension;
 
-    const auto tempDir = std::filesystem::temp_directory_path();
-    return tempDir / filename;
+    return std::filesystem::temp_directory_path() / filename;
 }
 
 std::vector<uint8_t> Utils::FS::ReadBytesFromFile(const std::filesystem::path& path)
