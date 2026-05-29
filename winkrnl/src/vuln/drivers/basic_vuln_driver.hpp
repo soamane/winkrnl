@@ -3,9 +3,9 @@
 #ifndef BASIC_VULN_DRIVER_HPP
 #define BASIC_VULN_DRIVER_HPP
 
+#include <Windows.h>
 #include <string>
 #include <vector>
-#include <Windows.h>
 
 class BasicVulnDriver {
 public:
@@ -21,8 +21,13 @@ public:
 public:
     virtual const std::vector<uint8_t>& GetData() const = 0;
 
-private:
+public:
+    virtual bool KeMemMove(uintptr_t dist, uintptr_t src, std::size_t size) = 0;
+
+protected:
     HANDLE hDevice;
+
+private:
     bool init;
     const std::string symbLink;
 };
