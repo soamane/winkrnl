@@ -12,7 +12,7 @@ public:
 public:
     const std::vector<uint8_t>& GetData() const override;
 
-public:
+private:
     bool KeMemMove(uintptr_t dist, uintptr_t src, std::size_t size) override;
 };
 
