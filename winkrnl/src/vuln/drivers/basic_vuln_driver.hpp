@@ -28,7 +28,9 @@ public:
 
 public:
     virtual bool KeMemMove(uintptr_t dist, uintptr_t src, std::size_t size) = 0;
-    virtual uintptr_t KeGetPhysicalAddress(uintptr_t vaddr) = 0;
+    virtual bool KeUnmapIoSpace(uintptr_t virtualAddr, std::size_t size) = 0;
+    virtual uintptr_t KeMapIoSpace(uintptr_t physicalAddr, std::size_t size) = 0;
+    virtual uintptr_t KeGetPhysicalAddress(uintptr_t virtualAddr) = 0;
 
 protected:
     template <typename T>

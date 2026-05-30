@@ -50,6 +50,8 @@ int main(int argc, char** argv)
 
     std::println("[+] Driver successfully loaded");
 
+    BasicVulnDriver* driver = vulnDrvLoader.GetDriver();
+
     /*
         TODO: Manual mapping your driver...
     */
