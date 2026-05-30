@@ -16,12 +16,17 @@ const std::vector<uint8_t>& Iqvw64Driver::GetData() const
 bool Iqvw64Driver::KeMemMove(uintptr_t dist, uintptr_t src, std::size_t size)
 {
     struct CopyMemoryRequest {
-        uintptr_t option;
+        char option;
         char pad0[0xF];
         uintptr_t src;
         uintptr_t dist;
         std::size_t size;
     };
+
+    static_assert(offsetof(CopyMemoryRequest, option) == 0x0);
+    static_assert(offsetof(CopyMemoryRequest, src) == 0x10);
+    static_assert(offsetof(CopyMemoryRequest, dist) == 0x18);
+    static_assert(offsetof(CopyMemoryRequest, size) == 0x20);
 
     CopyMemoryRequest request = { 0 };
     request.option = 0x33;
@@ -42,6 +47,12 @@ bool Iqvw64Driver::KeUnmapIoSpace(uintptr_t virtualAddr, std::size_t size)
         uintptr_t physicalAddr;
         std::size_t size;
     };
+
+    static_assert(offsetof(UnmapIoSpaceRequest, option) == 0x0);
+    static_assert(offsetof(UnmapIoSpaceRequest, retval) == 0x10);
+    static_assert(offsetof(UnmapIoSpaceRequest, virtualAddr) == 0x18);
+    static_assert(offsetof(UnmapIoSpaceRequest, physicalAddr) == 0x20);
+    static_assert(offsetof(UnmapIoSpaceRequest, size) == 0x28);
 
     UnmapIoSpaceRequest request = { 0 };
     request.option = 0x1A;
@@ -68,6 +79,12 @@ uintptr_t Iqvw64Driver::KeMapIoSpace(uintptr_t physicalAddr, std::size_t size)
         std::size_t size;
     };
 
+    static_assert(offsetof(MapIoSpaceRequest, option) == 0x0);
+    static_assert(offsetof(MapIoSpaceRequest, retval) == 0x10);
+    static_assert(offsetof(MapIoSpaceRequest, virtualAddr) == 0x18);
+    static_assert(offsetof(MapIoSpaceRequest, physicalAddr) == 0x20);
+    static_assert(offsetof(MapIoSpaceRequest, size) == 0x28);
+
     MapIoSpaceRequest request = { 0 };
     request.option = 0x19;
     request.physicalAddr = physicalAddr;
@@ -90,6 +107,10 @@ uintptr_t Iqvw64Driver::KeGetPhysicalAddress(uintptr_t virtualAddr)
         uintptr_t physicalAddr;
         uintptr_t virtualAddr;
     };
+
+    static_assert(offsetof(Virtual2PhysicalRequest, option) == 0x0);
+    static_assert(offsetof(Virtual2PhysicalRequest, physicalAddr) == 0x10);
+    static_assert(offsetof(Virtual2PhysicalRequest, virtualAddr) == 0x18);
 
     Virtual2PhysicalRequest request = { 0 };
     request.option = 0x25;
