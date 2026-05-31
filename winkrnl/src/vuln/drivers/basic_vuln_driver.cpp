@@ -46,3 +46,23 @@ bool BasicVulnDriver::WriteMemory(uintptr_t address, void* buffer, std::size_t s
 {
     return KeMemMove(address, reinterpret_cast<uintptr_t>(buffer), size);
 }
+
+bool BasicVulnDriver::WriteMappedMemory(uintptr_t address, void* buffer, std::size_t size)
+{
+    uintptr_t physicalAddr = KeGetPhysicalAddress(address);
+    if (!physicalAddr) {
+        return false;
+    }
+
+    uintptr_t virtualAddr = KeMapIoSpace(physicalAddr, size);
+    if (!virtualAddr) {
+        return false;
+    }
+
+    if (!WriteMemory(virtualAddr, buffer, size)) {
+        KeUnmapIoSpace(virtualAddr, size);
+        return false;
+    }
+
+    return KeUnmapIoSpace(virtualAddr, size);
+}

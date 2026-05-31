@@ -25,6 +25,7 @@ public:
 public:
     virtual bool ReadMemory(uintptr_t address, void* buffer, std::size_t size);
     virtual bool WriteMemory(uintptr_t address, void* buffer, std::size_t size);
+    virtual bool WriteMappedMemory(uintptr_t address, void* buffer, std::size_t size);
 
 public:
     virtual bool KeMemMove(uintptr_t dist, uintptr_t src, std::size_t size) = 0;
