@@ -63,8 +63,7 @@ bool Iqvw64Driver::KeUnmapIoSpace(uintptr_t virtualAddr, std::size_t size)
         std::println("[-] Failed to unmap address: 0x{:X}", virtualAddr);
         return false;
     }
-
-    std::println("[~] Nal MmUnmapIoSpace returned: {}", request.retval);
+    
     return true;
 }
 
@@ -95,7 +94,6 @@ uintptr_t Iqvw64Driver::KeMapIoSpace(uintptr_t physicalAddr, std::size_t size)
         return 0;
     }
 
-    std::println("[~] Nal MmMapIoSpace returned: {}", request.retval);
     return request.virtualAddr;
 }
 
