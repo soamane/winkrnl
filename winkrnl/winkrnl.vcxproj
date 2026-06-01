@@ -122,7 +122,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>ntdll.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>ntdll.lib;psapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <UACExecutionLevel>RequireAdministrator</UACExecutionLevel>
     </Link>
     <Manifest>
@@ -143,7 +143,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>ntdll.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>ntdll.lib;psapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <UACExecutionLevel>RequireAdministrator</UACExecutionLevel>
     </Link>
     <Manifest>
@@ -151,6 +151,7 @@
     </Manifest>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\kernel\kernel_context.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\utils\cmn_utils.cpp" />
     <ClCompile Include="src\utils\fs_utils.cpp" />
@@ -160,6 +161,7 @@
     <ClCompile Include="src\vuln\vuln_driver_loader.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\kernel\kernel_context.hpp" />
     <ClInclude Include="src\utils\cmn_utils.hpp" />
     <ClInclude Include="src\utils\fs_utils.hpp" />
     <ClInclude Include="src\vuln\drivers\basic_vuln_driver.hpp" />

@@ -4,6 +4,7 @@
 
 #include <utils/fs_utils.hpp>
 
+#include <kernel/kernel_context.hpp>
 #include <vuln/drivers/iqvw64_driver.hpp>
 #include <vuln/vuln_driver_loader.hpp>
 
@@ -50,7 +51,7 @@ int main(int argc, char** argv)
 
     std::println("[+] Driver successfully loaded");
 
-    BasicVulnDriver* driver = vulnDrvLoader.GetDriver();
+    KernelContext kernelCtx(vulnDrvLoader.GetDriver());
 
     /*
         TODO: Manual mapping your driver...
