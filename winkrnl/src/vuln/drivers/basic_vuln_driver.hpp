@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #ifndef BASIC_VULN_DRIVER_HPP
 #define BASIC_VULN_DRIVER_HPP

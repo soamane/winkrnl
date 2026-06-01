@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #ifndef VULN_DRIVER_LOADER_HPP
 #define VULN_DRIVER_LOADER_HPP

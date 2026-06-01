@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #ifndef FILE_SYSTEM_UTILS_HPP
 #define FILE_SYSTEM_UTILS_HPP

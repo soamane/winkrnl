@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #ifndef COMMON_UTILS_HPP
 #define COMMON_UTILS_HPP

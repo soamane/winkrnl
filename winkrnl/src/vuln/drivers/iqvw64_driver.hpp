@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #ifndef IQVW64_DRIVER_HPP
 #define IQVW64_DRIVER_HPP

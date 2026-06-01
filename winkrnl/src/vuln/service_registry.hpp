@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #ifndef SERVICE_REGISTRY_HPP
 #define SERVICE_REGISTRY_HPP

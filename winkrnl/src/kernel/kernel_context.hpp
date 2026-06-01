@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #ifndef KERNEL_CONTEXT_HPP
 #define KERNEL_CONTEXT_HPP
