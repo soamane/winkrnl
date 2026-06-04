@@ -19,15 +19,16 @@ public:
     uintptr_t AllocatePool(POOL_TYPE poolType, std::size_t size);
     bool FreePool(uintptr_t address);
 
-private:
+public:
     template <typename T, typename... A>
     bool InvokeK32Routine(T* outResult, uintptr_t functionAddress, const A... args);
 
     template <typename... A>
     inline bool InvokeK32Routine(uintptr_t functionAddress, const A... args);
 
-private:
+public:
     uintptr_t GetK32ModuleAddr(std::string_view moduleName);
+    uintptr_t GetK32ExportProcAddr(uintptr_t moduleBase, std::string_view functionName);
     uintptr_t GetK32ExportProcAddr(std::string_view moduleName, std::string_view functionName);
 
 private:

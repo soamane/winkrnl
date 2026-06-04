@@ -69,16 +69,10 @@ uintptr_t K32Context::GetK32ModuleAddr(std::string_view moduleName)
     return 0;
 }
 
-uintptr_t K32Context::GetK32ExportProcAddr(std::string_view moduleName, std::string_view functionName)
+uintptr_t K32Context::GetK32ExportProcAddr(uintptr_t moduleBase, std::string_view functionName)
 {
-    const auto moduleBaseAddr = GetK32ModuleAddr(moduleName);
-    if (!moduleBaseAddr) {
-        std::println("[-] Failed to get module '{}' base address", moduleName);
-        return 0;
-    }
-
     IMAGE_DOS_HEADER dosHeader = { 0 };
-    if (!driver->ReadMemory(moduleBaseAddr, &dosHeader, sizeof(dosHeader))) {
+    if (!driver->ReadMemory(moduleBase, &dosHeader, sizeof(dosHeader))) {
         std::println("[-] Failed to read module DOS header");
         return 0;
     }
@@ -89,7 +83,7 @@ uintptr_t K32Context::GetK32ExportProcAddr(std::string_view moduleName, std::str
     }
 
     IMAGE_NT_HEADERS ntHeaders = { 0 };
-    if (!driver->ReadMemory(moduleBaseAddr + dosHeader.e_lfanew, &ntHeaders, sizeof(ntHeaders))) {
+    if (!driver->ReadMemory(moduleBase + dosHeader.e_lfanew, &ntHeaders, sizeof(ntHeaders))) {
         std::println("[-] Failed to read module NT headers");
         return 0;
     }
@@ -104,11 +98,11 @@ uintptr_t K32Context::GetK32ExportProcAddr(std::string_view moduleName, std::str
 
     PIMAGE_EXPORT_DIRECTORY exportDir = reinterpret_cast<PIMAGE_EXPORT_DIRECTORY>(VirtualAlloc(nullptr, exDirSize, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE));
     if (!exportDir) {
-        std::println("[-] Failed to allocate memory for read kernel export directory for module '{}'", moduleName);
+        std::println("[-] Failed to allocate memory for read kernel export directory");
         return 0;
     }
 
-    if (!driver->ReadMemory(moduleBaseAddr + exDirBaseAddr, exportDir, exDirSize)) {
+    if (!driver->ReadMemory(moduleBase + exDirBaseAddr, exportDir, exDirSize)) {
         std::println("[-] Failed to read module export directory");
         VirtualFree(exportDir, 0, MEM_RELEASE);
         return 0;
@@ -129,7 +123,7 @@ uintptr_t K32Context::GetK32ExportProcAddr(std::string_view moduleName, std::str
             DWORD functionRva = functionTable[ordinal];
 
             if (functionRva == 0 || functionRva > 0x1000) {
-                functionAddr = moduleBaseAddr + functionRva;
+                functionAddr = moduleBase + functionRva;
                 std::println("[+] Found '{}' at 0x{:X}", functionName, functionAddr);
             }
             break;
@@ -138,4 +132,15 @@ uintptr_t K32Context::GetK32ExportProcAddr(std::string_view moduleName, std::str
 
     VirtualFree(exportDir, 0, MEM_RELEASE);
     return functionAddr;
+}
+
+uintptr_t K32Context::GetK32ExportProcAddr(std::string_view moduleName, std::string_view functionName)
+{
+    const auto moduleBaseAddr = GetK32ModuleAddr(moduleName);
+    if (!moduleBaseAddr) {
+        std::println("[-] Failed to get module '{}' base address", moduleName);
+        return 0;
+    }
+
+    return GetK32ExportProcAddr(moduleBaseAddr, functionName);
 }
