@@ -1,6 +1,6 @@
-﻿#include "kernel_context.hpp"
+﻿#include "k32_context.hpp"
 
-#include <scanner/pattern_scanner.hpp>
+#include "scanner/k32_scanner.hpp"
 
 #include <windows.h>
 
@@ -9,12 +9,13 @@
 
 K32Context::K32Context(std::shared_ptr<BasicVulnDriver> driver)
     : driver(std::move(driver))
-    , patternScanner(std::make_unique<PatternScanner>(driver))
+    , k32Scanner(std::make_unique<K32PatternScanner>(this->driver))
 {
 }
 
 K32Context::~K32Context()
 {
+
 }
 
 const BasicVulnDriver& K32Context::GetDriver() const
@@ -22,9 +23,9 @@ const BasicVulnDriver& K32Context::GetDriver() const
     return *driver;
 }
 
-const PatternScanner& K32Context::GetPatternScanner() const
+const K32PatternScanner& K32Context::GetPatternScanner() const
 {
-    return *patternScanner;
+    return *k32Scanner;
 }
 
 uintptr_t K32Context::AllocatePool(POOL_TYPE poolType, std::size_t size)

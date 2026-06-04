@@ -5,16 +5,17 @@
 
 #include <utils/pe_utils.hpp>
 
+#include <memory>
 #include <windows.h>
 
 class K32Context;
 
 class DriverMapper {
 public:
-    DriverMapper(K32Context* k32ctx);
+    explicit DriverMapper(std::shared_ptr<K32Context> k32ctx);
 
 public:
-    bool Map(void* image);
+    bool Map(void* fileBytes);
 
 private:
     void CopyToMemory(uintptr_t baseAddress, PIMAGE_NT_HEADERS ntHeaders, void* data);
@@ -22,7 +23,7 @@ private:
     void ResolveRelocations(uintptr_t baseAddress, PIMAGE_NT_HEADERS ntHeaders, const std::vector<Utils::PE::Relocation>& relocs);
 
 private:
-    K32Context* k32ctx;
+    std::shared_ptr<K32Context> k32ctx;
 };
 
 #endif // !DRIVER_MAPPER_HPP

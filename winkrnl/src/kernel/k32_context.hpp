@@ -3,13 +3,15 @@
 #ifndef K32_CONTEXT_HPP
 #define K32_CONTEXT_HPP
 
+#include <vuln/drivers/basic_vuln_driver.hpp>
+
 #include <ntdll.hpp>
+
 #include <print>
 #include <memory>
 #include <string_view>
-#include <vuln/drivers/basic_vuln_driver.hpp>
 
-class PatternScanner;
+class K32PatternScanner;
 
 class K32Context {
 public:
@@ -18,7 +20,7 @@ public:
 
 public:
     const BasicVulnDriver& GetDriver() const;
-    const PatternScanner& GetPatternScanner() const;
+    const K32PatternScanner& GetPatternScanner() const;
 
 public:
     uintptr_t AllocatePool(POOL_TYPE poolType, std::size_t size);
@@ -39,7 +41,7 @@ public:
 
 private:
     std::shared_ptr<BasicVulnDriver> driver;
-    std::unique_ptr<PatternScanner> patternScanner;
+    std::unique_ptr<K32PatternScanner> k32Scanner;
 };
 
 #endif // !K32_CONTEXT_HPP

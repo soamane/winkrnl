@@ -1,15 +1,15 @@
 ﻿#include "driver_mapper.hpp"
 
-#include <kernel/kernel_context.hpp>
+#include <kernel/k32_context.hpp>
 
-DriverMapper::DriverMapper(K32Context* k32ctx)
-    : k32ctx(k32ctx)
+DriverMapper::DriverMapper(std::shared_ptr<K32Context> k32ctx)
+    : k32ctx(std::move(k32ctx))
 {
 }
 
-bool DriverMapper::Map(void* image)
+bool DriverMapper::Map(void* fileBytes)
 {
-    PIMAGE_NT_HEADERS ntHeaders = Utils::PE::GetNtHeaders(image);
+    PIMAGE_NT_HEADERS ntHeaders = Utils::PE::GetNtHeaders(fileBytes);
     if (!ntHeaders) {
         std::println("[-] Failed to fetch image NT headers");
         return false;
@@ -33,7 +33,7 @@ bool DriverMapper::Map(void* image)
 
     std::println("[+] Kernel memory allocated at: 0x{:016X}", kernelBaseAddr);
 
-    CopyToMemory(reinterpret_cast<uintptr_t>(imageBaseAddr), ntHeaders, image);
+    CopyToMemory(reinterpret_cast<uintptr_t>(imageBaseAddr), ntHeaders, fileBytes);
 
     auto relocs = Utils::PE::GetRelocations(imageBaseAddr, ntHeaders);
     ResolveRelocations(kernelBaseAddr - ntHeaders->OptionalHeader.ImageBase, ntHeaders, relocs);

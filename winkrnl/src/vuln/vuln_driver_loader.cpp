@@ -82,7 +82,7 @@ bool VulnDriverLoader::Unload()
     return true;
 }
 
-bool EnableLoadPrivilege()
+bool VulnDriverLoader::EnableLoadPrivileges()
 {
     HANDLE hToken;
     if (!OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, &hToken)) {

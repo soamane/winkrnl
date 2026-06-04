@@ -19,6 +19,9 @@ public:
     bool Load();
     bool Unload();
 
+public:
+    static bool EnableLoadPrivileges();
+
 private:
     bool isLoaded;
 

@@ -36,7 +36,7 @@
     <ClCompile Include="src\vuln\drivers\basic_vuln_driver.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="src\kernel\kernel_context.cpp">
+    <ClCompile Include="src\kernel\k32_context.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
     <ClCompile Include="src\utils\pe_utils.cpp">
@@ -45,7 +45,7 @@
     <ClCompile Include="src\mapper\driver_mapper.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="src\scanner\pattern_scanner.cpp">
+    <ClCompile Include="src\kernel\scanner\k32_scanner.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
   </ItemGroup>
@@ -68,7 +68,7 @@
     <ClInclude Include="src\vuln\service_registry.hpp">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="src\kernel\kernel_context.hpp">
+    <ClInclude Include="src\kernel\k32_context.hpp">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
     <ClInclude Include="src\utils\pe_utils.hpp">
@@ -77,7 +77,7 @@
     <ClInclude Include="src\mapper\driver_mapper.hpp">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="src\scanner\pattern_scanner.hpp">
+    <ClInclude Include="src\kernel\scanner\k32_scanner.hpp">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
   </ItemGroup>

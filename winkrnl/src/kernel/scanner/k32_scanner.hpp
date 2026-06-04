@@ -1,17 +1,16 @@
 ﻿#pragma once
 
-#ifndef PATTERN_SCANNER_HPP
-#define PATTERN_SCANNER_HPP
+#ifndef K32_PATTERN_SCANNER_HPP
+#define K32_PATTERN_SCANNER_HPP
 
 #include <memory>
 #include <cstdint>
 
 class BasicVulnDriver;
 
-class PatternScanner {
+class K32PatternScanner {
 public:
-    explicit PatternScanner(std::shared_ptr<BasicVulnDriver> driver);
-    ~PatternScanner();
+    explicit K32PatternScanner(std::shared_ptr<BasicVulnDriver> driver);
 
 public:
     uintptr_t FindPatternAddr(uintptr_t moduleBase, size_t moduleSize, const char* pattern, const char* mask) const;
