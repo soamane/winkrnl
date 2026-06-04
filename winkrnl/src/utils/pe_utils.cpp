@@ -46,11 +46,9 @@ std::vector<Utils::PE::Import> Utils::PE::GetImports(void* image, PIMAGE_NT_HEAD
 
             Import::Thunk thunk;
             thunk.name = thunkInfo->Name;
-            thunk.address = firstThunk->u1.Function;
+            thunk.address = &firstThunk->u1.Function;
 
             i.thunks.push_back(thunk);
-
-            std::println("  > Function: {} Address: 0x{:X}", thunk.name, thunk.address);
 
             ++firstThunk;
             ++originFirstThunk;
@@ -61,4 +59,28 @@ std::vector<Utils::PE::Import> Utils::PE::GetImports(void* image, PIMAGE_NT_HEAD
     }
 
     return imports;
+}
+
+std::vector<Utils::PE::Relocation> Utils::PE::GetRelocations(void* image, PIMAGE_NT_HEADERS ntHeaders)
+{
+    const auto relocsBase = ntHeaders->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_BASERELOC].VirtualAddress;
+    const auto relocsSize = ntHeaders->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_BASERELOC].Size;
+
+    std::vector<Relocation> relocs;
+
+    auto currReloc = reinterpret_cast<PIMAGE_BASE_RELOCATION>(reinterpret_cast<uintptr_t>(image) + relocsBase);
+    const auto end = reinterpret_cast<uintptr_t>(currReloc) + relocsSize;
+
+    while (currReloc->VirtualAddress && currReloc->SizeOfBlock != 0) {
+        Relocation reloc;
+        reloc.address = reinterpret_cast<uintptr_t>(image) + currReloc->VirtualAddress;
+        reloc.infoPtr = reinterpret_cast<WORD*>(currReloc + 1);
+        reloc.countOfEntries = (currReloc->SizeOfBlock - sizeof(IMAGE_BASE_RELOCATION)) / sizeof(WORD);
+
+        relocs.push_back(reloc);
+        currReloc = reinterpret_cast<PIMAGE_BASE_RELOCATION>(reinterpret_cast<uintptr_t>(currReloc) + currReloc->SizeOfBlock);
+    }
+
+    std::println("[+] Processed {} relocation blocks", relocs.size());
+    return relocs;
 }
