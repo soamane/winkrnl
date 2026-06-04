@@ -32,22 +32,22 @@ void BasicVulnDriver::CloseDevice()
     hDevice = INVALID_HANDLE_VALUE;
 }
 
-HANDLE BasicVulnDriver::GetDevice()
+HANDLE BasicVulnDriver::GetDevice() const
 {
     return hDevice;
 }
 
-bool BasicVulnDriver::ReadMemory(uintptr_t address, void* buffer, std::size_t size)
+bool BasicVulnDriver::ReadMemory(uintptr_t address, void* buffer, std::size_t size) const
 {
     return KeMemMove(reinterpret_cast<uintptr_t>(buffer), address, size);
 }
 
-bool BasicVulnDriver::WriteMemory(uintptr_t address, void* buffer, std::size_t size)
+bool BasicVulnDriver::WriteMemory(uintptr_t address, void* buffer, std::size_t size) const
 {
     return KeMemMove(address, reinterpret_cast<uintptr_t>(buffer), size);
 }
 
-bool BasicVulnDriver::WriteMappedMemory(uintptr_t address, void* buffer, std::size_t size)
+bool BasicVulnDriver::WriteMappedMemory(uintptr_t address, void* buffer, std::size_t size) const
 {
     uintptr_t physicalAddr = KeGetPhysicalAddress(address);
     if (!physicalAddr) {

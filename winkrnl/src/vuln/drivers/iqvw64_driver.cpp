@@ -13,7 +13,7 @@ const std::vector<uint8_t>& Iqvw64Driver::GetData() const
     return iqvw64_data;
 }
 
-bool Iqvw64Driver::KeMemMove(uintptr_t dist, uintptr_t src, std::size_t size)
+bool Iqvw64Driver::KeMemMove(uintptr_t dist, uintptr_t src, std::size_t size) const
 {
     struct CopyMemoryRequest {
         char option;
@@ -37,7 +37,7 @@ bool Iqvw64Driver::KeMemMove(uintptr_t dist, uintptr_t src, std::size_t size)
     return SendIoRequest<CopyMemoryRequest>(0x80862007, request);
 }
 
-bool Iqvw64Driver::KeUnmapIoSpace(uintptr_t virtualAddr, std::size_t size)
+bool Iqvw64Driver::KeUnmapIoSpace(uintptr_t virtualAddr, std::size_t size) const
 {
     struct UnmapIoSpaceRequest {
         char option;
@@ -67,7 +67,7 @@ bool Iqvw64Driver::KeUnmapIoSpace(uintptr_t virtualAddr, std::size_t size)
     return true;
 }
 
-uintptr_t Iqvw64Driver::KeMapIoSpace(uintptr_t physicalAddr, std::size_t size)
+uintptr_t Iqvw64Driver::KeMapIoSpace(uintptr_t physicalAddr, std::size_t size) const
 {
     struct MapIoSpaceRequest {
         char option;
@@ -97,7 +97,7 @@ uintptr_t Iqvw64Driver::KeMapIoSpace(uintptr_t physicalAddr, std::size_t size)
     return request.virtualAddr;
 }
 
-uintptr_t Iqvw64Driver::KeGetPhysicalAddress(uintptr_t virtualAddr)
+uintptr_t Iqvw64Driver::KeGetPhysicalAddress(uintptr_t virtualAddr) const
 {
     struct Virtual2PhysicalRequest {
         char option;

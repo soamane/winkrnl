@@ -47,8 +47,8 @@ bool DriverMapper::Map(void* image)
 
     std::println("[+] Imports resolved");
 
-    BasicVulnDriver* driver = k32ctx->GetDriver();
-    if (!driver->WriteMemory(kernelBaseAddr, imageBaseAddr, imageSize)) {
+    const auto& driver = k32ctx->GetDriver();
+    if (!driver.WriteMemory(kernelBaseAddr, imageBaseAddr, imageSize)) {
         std::println("[-] Failed to write memory to kernel");
         VirtualFree(imageBaseAddr, 0, MEM_RELEASE);
         k32ctx->FreePool(kernelBaseAddr);

@@ -1,17 +1,30 @@
 ﻿#include "kernel_context.hpp"
 
+#include <scanner/pattern_scanner.hpp>
+
 #include <windows.h>
 
 #include <psapi.h>
+#include <DbgHelp.h>
 
-K32Context::K32Context(BasicVulnDriver* driver)
-    : driver(driver)
+K32Context::K32Context(std::shared_ptr<BasicVulnDriver> driver)
+    : driver(std::move(driver))
+    , patternScanner(std::make_unique<PatternScanner>(driver))
 {
 }
 
-BasicVulnDriver* K32Context::GetDriver()
+K32Context::~K32Context()
 {
-    return driver;
+}
+
+const BasicVulnDriver& K32Context::GetDriver() const
+{
+    return *driver;
+}
+
+const PatternScanner& K32Context::GetPatternScanner() const
+{
+    return *patternScanner;
 }
 
 uintptr_t K32Context::AllocatePool(POOL_TYPE poolType, std::size_t size)
@@ -66,6 +79,51 @@ uintptr_t K32Context::GetK32ModuleAddr(std::string_view moduleName)
         }
     }
 
+    return 0;
+}
+
+size_t K32Context::GetK32ModuleSize(std::string_view moduleName)
+{
+    LPVOID drivers[1024];
+    DWORD cbNeeded;
+
+    if (!K32EnumDeviceDrivers(drivers, sizeof(drivers), &cbNeeded)) {
+        std::println("[-] Failed to enumerate device drivers");
+        return 0;
+    }
+
+    DWORD cDrivers = cbNeeded / sizeof(drivers[0]);
+
+    for (DWORD i = 0; i < cDrivers; ++i) {
+        char baseName[256];
+        if (!K32GetDeviceDriverBaseNameA(drivers[i], baseName, sizeof(baseName)))
+            continue;
+
+        if (_stricmp(baseName, moduleName.data()) != 0)
+            continue;
+
+        // Читаем DOS заголовок
+        IMAGE_DOS_HEADER dosHeader { };
+        if (!driver->ReadMemory(reinterpret_cast<uintptr_t>(drivers[i]), &dosHeader, sizeof(dosHeader)))
+            continue;
+
+        if (dosHeader.e_magic != IMAGE_DOS_SIGNATURE)
+            continue;
+
+        // Читаем NT заголовок
+        IMAGE_NT_HEADERS64 ntHeaders { };
+        if (!driver->ReadMemory(reinterpret_cast<uintptr_t>(drivers[i]) + dosHeader.e_lfanew, &ntHeaders, sizeof(ntHeaders)))
+            continue;
+
+        if (ntHeaders.Signature != IMAGE_NT_SIGNATURE)
+            continue;
+
+        const size_t imageSize = ntHeaders.OptionalHeader.SizeOfImage;
+        std::println("[+] Module '{}' size found: 0x{:X}", moduleName, imageSize);
+        return imageSize;
+    }
+
+    std::println("[-] Failed to get module size for '{}'", moduleName);
     return 0;
 }
 

@@ -7,7 +7,7 @@
 #include <utils/fs_utils.hpp>
 #include <windows.h>
 
-VulnDriverLoader::VulnDriverLoader(std::unique_ptr<BasicVulnDriver> driver)
+VulnDriverLoader::VulnDriverLoader(std::shared_ptr<BasicVulnDriver> driver)
     : isLoaded(false)
     , drvPath(Utils::FS::GenerateRandomTempPath(".tmp"))
     , ntPath(L"\\Registry\\Machine\\SYSTEM\\CurrentControlSet\\Services\\" + drvPath.stem().wstring())
@@ -80,11 +80,6 @@ bool VulnDriverLoader::Unload()
 
     isLoaded = false;
     return true;
-}
-
-BasicVulnDriver* VulnDriverLoader::GetDriver()
-{
-    return driver.get();
 }
 
 bool EnableLoadPrivilege()

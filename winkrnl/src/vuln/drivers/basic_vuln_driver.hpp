@@ -17,25 +17,25 @@ public:
     bool OpenDevice();
     void CloseDevice();
 
-    HANDLE GetDevice();
+    HANDLE GetDevice() const;
 
 public:
     virtual const std::vector<uint8_t>& GetData() const = 0;
 
 public:
-    virtual bool ReadMemory(uintptr_t address, void* buffer, std::size_t size);
-    virtual bool WriteMemory(uintptr_t address, void* buffer, std::size_t size);
-    virtual bool WriteMappedMemory(uintptr_t address, void* buffer, std::size_t size);
+    virtual bool ReadMemory(uintptr_t address, void* buffer, std::size_t size) const;
+    virtual bool WriteMemory(uintptr_t address, void* buffer, std::size_t size) const;
+    virtual bool WriteMappedMemory(uintptr_t address, void* buffer, std::size_t size) const;
 
 public:
-    virtual bool KeMemMove(uintptr_t dist, uintptr_t src, std::size_t size) = 0;
-    virtual bool KeUnmapIoSpace(uintptr_t virtualAddr, std::size_t size) = 0;
-    virtual uintptr_t KeMapIoSpace(uintptr_t physicalAddr, std::size_t size) = 0;
-    virtual uintptr_t KeGetPhysicalAddress(uintptr_t virtualAddr) = 0;
+    virtual bool KeMemMove(uintptr_t dist, uintptr_t src, std::size_t size) const = 0;
+    virtual bool KeUnmapIoSpace(uintptr_t virtualAddr, std::size_t size) const = 0;
+    virtual uintptr_t KeMapIoSpace(uintptr_t physicalAddr, std::size_t size) const = 0;
+    virtual uintptr_t KeGetPhysicalAddress(uintptr_t virtualAddr) const = 0;
 
 protected:
     template <typename T>
-    bool SendIoRequest(DWORD controlCode, const T& req);
+    bool SendIoRequest(DWORD controlCode, const T& req) const;
 
 private:
     HANDLE hDevice;
@@ -46,7 +46,7 @@ private:
 #endif // !BASIC_VULN_DRIVER_HPP
 
 template <typename T>
-inline bool BasicVulnDriver::SendIoRequest(DWORD controlCode, const T& req)
+inline bool BasicVulnDriver::SendIoRequest(DWORD controlCode, const T& req) const
 {
     DWORD bytesReturned = 0;
     if (!DeviceIoControl(hDevice, controlCode, const_cast<void*>(static_cast<const void*>(&req)), sizeof(req), nullptr, 0, &bytesReturned, nullptr)) {

@@ -5,15 +5,20 @@
 
 #include <ntdll.hpp>
 #include <print>
+#include <memory>
 #include <string_view>
 #include <vuln/drivers/basic_vuln_driver.hpp>
 
+class PatternScanner;
+
 class K32Context {
 public:
-    explicit K32Context(BasicVulnDriver* driver);
+    explicit K32Context(std::shared_ptr<BasicVulnDriver> driver);
+    ~K32Context();
 
 public:
-    BasicVulnDriver* GetDriver();
+    const BasicVulnDriver& GetDriver() const;
+    const PatternScanner& GetPatternScanner() const;
 
 public:
     uintptr_t AllocatePool(POOL_TYPE poolType, std::size_t size);
@@ -28,11 +33,13 @@ public:
 
 public:
     uintptr_t GetK32ModuleAddr(std::string_view moduleName);
+    std::size_t GetK32ModuleSize(std::string_view moduleName);
     uintptr_t GetK32ExportProcAddr(uintptr_t moduleBase, std::string_view functionName);
     uintptr_t GetK32ExportProcAddr(std::string_view moduleName, std::string_view functionName);
 
 private:
-    BasicVulnDriver* driver;
+    std::shared_ptr<BasicVulnDriver> driver;
+    std::unique_ptr<PatternScanner> patternScanner;
 };
 
 #endif // !K32_CONTEXT_HPP
