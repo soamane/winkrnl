@@ -20,6 +20,7 @@ public:
     HANDLE GetDevice() const;
 
 public:
+    virtual uintptr_t GetTimeStamp() const = 0;
     virtual const std::vector<uint8_t>& GetData() const = 0;
 
 public:

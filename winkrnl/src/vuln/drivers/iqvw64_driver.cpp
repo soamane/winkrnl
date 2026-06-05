@@ -8,6 +8,11 @@ Iqvw64Driver::Iqvw64Driver(std::string_view symbLink)
 {
 }
 
+uintptr_t Iqvw64Driver::GetTimeStamp() const
+{
+    return 0x5284EAC3;
+}
+
 const std::vector<uint8_t>& Iqvw64Driver::GetData() const
 {
     return iqvw64_data;
