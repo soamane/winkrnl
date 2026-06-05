@@ -4,25 +4,28 @@
 
 #include <vector>
 
-K32ModuleParser::K32ModuleParser(std::shared_ptr<BasicVulnDriver> driver)
-    : driver(std::move(driver))
+K32ModuleParser::K32ModuleParser(const BasicVulnDriver& driver, uintptr_t moduleBase, std::size_t moduleSize)
+    : moduleBase(moduleBase)
+    , moduleSize(moduleSize)
+    , driver(std::move(driver))
 {
 }
 
-uintptr_t K32ModuleParser::ResolveAbsoluteAddr(uintptr_t instrAddr, std::size_t instrOffset, std::size_t instrSize) const
+uintptr_t K32ModuleParser::FindAbsoluteAddr(const char* pattern, const char* mask, std::size_t opcodeOffset, std::size_t instrSize) const
 {
-    std::int32_t relOffset = 0;
-    if (!driver->ReadMemory(instrAddr + instrOffset, &relOffset, sizeof(relOffset))) {
+    const auto instrAddr = FindPatternAddr(pattern, mask);
+    if (!instrAddr) {
+        std::println("[-] Failed to find pattern address");
         return 0;
     }
 
-    return instrAddr + instrSize + relOffset;
+    return ResolveAbsoluteAddr(instrAddr, opcodeOffset, instrSize);
 }
 
-uintptr_t K32ModuleParser::FindPatternAddr(uintptr_t moduleBase, size_t moduleSize, const char* pattern, const char* mask) const
+uintptr_t K32ModuleParser::FindPatternAddr(const char* pattern, const char* mask) const
 {
     std::vector<std::uint8_t> buffer(moduleSize);
-    if (!driver->ReadMemory(moduleBase, buffer.data(), moduleSize)) {
+    if (!driver.ReadMemory(moduleBase, buffer.data(), moduleSize)) {
         return 0;
     }
 
@@ -47,4 +50,14 @@ uintptr_t K32ModuleParser::FindPatternAddr(uintptr_t moduleBase, size_t moduleSi
     }
 
     return 0;
+}
+
+uintptr_t K32ModuleParser::ResolveAbsoluteAddr(uintptr_t instrAddr, std::size_t instrOffset, std::size_t instrSize) const
+{
+    std::int32_t relOffset = 0;
+    if (!driver.ReadMemory(instrAddr + instrOffset, &relOffset, sizeof(relOffset))) {
+        return 0;
+    }
+
+    return instrAddr + instrSize + relOffset;
 }

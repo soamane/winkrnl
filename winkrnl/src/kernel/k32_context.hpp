@@ -11,8 +11,6 @@
 #include <memory>
 #include <string_view>
 
-class K32ModuleParser;
-
 class K32Context {
 public:
     explicit K32Context(std::shared_ptr<BasicVulnDriver> driver);
@@ -20,7 +18,6 @@ public:
 
 public:
     const BasicVulnDriver& GetDriver() const;
-    const K32ModuleParser& GetPatternScanner() const;
 
 public:
     uintptr_t AllocatePool(POOL_TYPE poolType, std::size_t size);
@@ -41,7 +38,6 @@ public:
 
 private:
     std::shared_ptr<BasicVulnDriver> driver;
-    std::unique_ptr<K32ModuleParser> k32Scanner;
 };
 
 #endif // !K32_CONTEXT_HPP

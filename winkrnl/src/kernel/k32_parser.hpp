@@ -10,14 +10,25 @@ class BasicVulnDriver;
 
 class K32ModuleParser {
 public:
-    explicit K32ModuleParser(std::shared_ptr<BasicVulnDriver> driver);
+    K32ModuleParser(const BasicVulnDriver& driver,
+        uintptr_t moduleBase,
+        std::size_t moduleSize);
 
 public:
-    uintptr_t ResolveAbsoluteAddr(uintptr_t instrAddr, std::size_t instrOffset, std::size_t instrSize) const;
-    uintptr_t FindPatternAddr(uintptr_t moduleBase, size_t moduleSize, const char* pattern, const char* mask) const;
+    uintptr_t FindAbsoluteAddr(
+        const char* pattern,
+        const char* mask,
+        std::size_t opcodeOffset, std::size_t instrSize) const;
+
+    uintptr_t FindPatternAddr(const char* pattern, const char* mask) const;
 
 private:
-    std::shared_ptr<BasicVulnDriver> driver;
+    uintptr_t ResolveAbsoluteAddr(uintptr_t instrAddr, std::size_t instrOffset, std::size_t instrSize) const;
+
+private:
+    const uintptr_t moduleBase;
+    const std::size_t moduleSize;
+    const BasicVulnDriver& driver;
 };
 
 #endif // !K32_MODULE_PARSER_HPP
