@@ -45,7 +45,7 @@
     <ClCompile Include="src\mapper\driver_mapper.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="src\kernel\scanner\k32_scanner.cpp">
+    <ClCompile Include="src\kernel\k32_parser.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
   </ItemGroup>
@@ -77,7 +77,7 @@
     <ClInclude Include="src\mapper\driver_mapper.hpp">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="src\kernel\scanner\k32_scanner.hpp">
+    <ClInclude Include="src\kernel\k32_parser.hpp">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
   </ItemGroup>

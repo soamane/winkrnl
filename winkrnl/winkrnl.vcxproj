@@ -154,7 +154,7 @@
     <ClCompile Include="src\kernel\k32_context.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\mapper\driver_mapper.cpp" />
-    <ClCompile Include="src\kernel\scanner\k32_scanner.cpp" />
+    <ClCompile Include="src\kernel\k32_parser.cpp" />
     <ClCompile Include="src\utils\cmn_utils.cpp" />
     <ClCompile Include="src\utils\fs_utils.cpp" />
     <ClCompile Include="src\utils\pe_utils.cpp" />
@@ -166,7 +166,7 @@
   <ItemGroup>
     <ClInclude Include="src\kernel\k32_context.hpp" />
     <ClInclude Include="src\mapper\driver_mapper.hpp" />
-    <ClInclude Include="src\kernel\scanner\k32_scanner.hpp" />
+    <ClInclude Include="src\kernel\k32_parser.hpp" />
     <ClInclude Include="src\utils\cmn_utils.hpp" />
     <ClInclude Include="src\utils\fs_utils.hpp" />
     <ClInclude Include="src\utils\pe_utils.hpp" />
