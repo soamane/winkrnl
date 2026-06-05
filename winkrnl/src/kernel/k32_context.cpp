@@ -1,6 +1,6 @@
 ﻿#include "k32_context.hpp"
 
-#include "scanner/k32_scanner.hpp"
+#include "k32_parser.hpp"
 
 #include <windows.h>
 
@@ -9,7 +9,7 @@
 
 K32Context::K32Context(std::shared_ptr<BasicVulnDriver> driver)
     : driver(std::move(driver))
-    , k32Scanner(std::make_unique<K32PatternScanner>(this->driver))
+    , k32Scanner(std::make_unique<K32ModuleParser>(this->driver))
 {
 }
 
@@ -23,7 +23,7 @@ const BasicVulnDriver& K32Context::GetDriver() const
     return *driver;
 }
 
-const K32PatternScanner& K32Context::GetPatternScanner() const
+const K32ModuleParser& K32Context::GetPatternScanner() const
 {
     return *k32Scanner;
 }
