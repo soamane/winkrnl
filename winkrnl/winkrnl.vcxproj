@@ -162,6 +162,7 @@
     <ClCompile Include="src\vuln\drivers\iqvw64_driver.cpp" />
     <ClCompile Include="src\vuln\service_registry.cpp" />
     <ClCompile Include="src\vuln\vuln_driver_loader.cpp" />
+    <ClCompile Include="src\vuln\vuln_trace_cleaner.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\kernel\k32_context.hpp" />
@@ -174,6 +175,7 @@
     <ClInclude Include="src\vuln\drivers\iqvw64_driver.hpp" />
     <ClInclude Include="src\vuln\service_registry.hpp" />
     <ClInclude Include="src\vuln\vuln_driver_loader.hpp" />
+    <ClInclude Include="src\vuln\vuln_trace_cleaner.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
