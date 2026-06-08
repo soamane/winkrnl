@@ -57,5 +57,16 @@ bool ServiceRegistry::CreateRegistryEntry() const
 
 bool ServiceRegistry::DeleteRegistryEntry() const
 {
-    return RegDeleteKeyA(HKEY_LOCAL_MACHINE, subKey.c_str()) == ERROR_SUCCESS;
+    LSTATUS status = RegDeleteKeyExA(
+        HKEY_LOCAL_MACHINE,
+        subKey.c_str(),
+        KEY_WOW64_64KEY,
+        0);
+
+    if (status != ERROR_SUCCESS && status != ERROR_FILE_NOT_FOUND) {
+        std::println("[-] Failed to delete registry key (0x{:X})", status);
+        return false;
+    }
+
+    return true;
 }
