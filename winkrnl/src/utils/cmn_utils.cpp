@@ -2,6 +2,17 @@
 
 #include <random>
 
+uintptr_t Utils::Common::GenerateRandomTimeStamp()
+{
+    static constexpr uintptr_t kMinTimestamp = 0x5A4AFB80UL; // 2018-01-01
+    static constexpr uintptr_t kMaxTimestamp = 0x6771D880UL; // 2024-12-31
+
+    static std::mt19937 rng { std::random_device { }() };
+    static std::uniform_int_distribution<uintptr_t> dist(kMinTimestamp, kMaxTimestamp);
+
+    return dist(rng);
+}
+
 std::string Utils::Common::GenerateRandomString(std::size_t length)
 {
     constexpr std::string_view charset = "abcdefghijklmnopqrstuvwxyz"
