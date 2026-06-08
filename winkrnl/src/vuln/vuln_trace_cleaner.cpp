@@ -3,8 +3,18 @@
 #include <kernel/k32_context.hpp>
 #include <kernel/k32_parser.hpp>
 
+#include <utils/cmn_utils.hpp>
+
 #include <ntdll.hpp>
 #include <print>
+
+struct PiDDBCacheEntry {
+    LIST_ENTRY List;
+    UNICODE_STRING DriverName;
+    ULONG TimeDateStamp;
+    NTSTATUS LoadStatus;
+    LIST_ENTRY Links;
+};
 
 VulnTraceCleaner::VulnTraceCleaner(std::shared_ptr<K32Context> k32ctx, std::string_view k32ModuleName)
     : k32ctx(std::move(k32ctx))
@@ -17,39 +27,10 @@ VulnTraceCleaner::VulnTraceCleaner(std::shared_ptr<K32Context> k32ctx, std::stri
 
 bool VulnTraceCleaner::Cleanup() const
 {
-    if (!CleanupPiDDBCacheTable()) {
-        std::println("[-] Failed to cleanup PiDDBCacheTable");
-        return false;
-    }
-
     if (!CleanupPiDDBCacheList()) {
         std::println("[-] Failed to cleanup PiDDBCacheList");
         return false;
     }
-
-    if (!CleanupPsLoadedModuleList()) {
-        std::println("[-] Failed to cleanup PsLoadedModuleList");
-        return false;
-    }
-
-    return true;
-}
-
-bool VulnTraceCleaner::CleanupPiDDBCacheTable() const
-{
-    static const auto _PiDDBCacheTable = moduleParser->FindAbsoluteAddr("\x48\x8D\x0D\x00\x00\x00\x00\x45\x33\xF6\x48\x89\x44\x24", "xxx????xxxxxxx", 3, 7);
-    if (!_PiDDBCacheTable) {
-        std::println("[-] _PiDDBCacheTable not found");
-        return false;
-    }
-
-    RTL_AVL_TABLE table = { 0 };
-    if (!k32ctx->GetDriver().ReadMemory(_PiDDBCacheTable, &table, sizeof(table))) {
-        std::println("[-] Failed to read _PiDDBCacheTable");
-        return false;
-    }
-
-    std::println("[+] _PiDDBCacheTable: found {} elements ", table.NumberGenericTableElements);
 
     return true;
 }
@@ -63,11 +44,11 @@ bool VulnTraceCleaner::CleanupPiDDBCacheList() const
     }
 
     struct PiDDBCacheEntry {
-        LIST_ENTRY List; 
-        UNICODE_STRING DriverName; 
+        LIST_ENTRY List;
+        UNICODE_STRING DriverName;
         ULONG TimeDateStamp;
-        NTSTATUS LoadStatus; 
-        LIST_ENTRY Links; 
+        NTSTATUS LoadStatus;
+        LIST_ENTRY Links;
     };
 
     uintptr_t link = 0;
@@ -99,16 +80,6 @@ bool VulnTraceCleaner::CleanupPiDDBCacheList() const
         }
 
         link = flink;
-    }
-    return true;
-}
-
-bool VulnTraceCleaner::CleanupPsLoadedModuleList() const
-{
-    static const auto _PsLoadedModuleList = moduleParser->FindAbsoluteAddr("\x48\x8D\x05\x00\x00\x00\x00\x48\x3B\xD8\x74\x00\xBA", "xxx????xxxx?x", 3, 7);
-    if (!_PsLoadedModuleList) {
-        std::println("[-] _PsLoadedModuleList not found");
-        return false;
     }
 
     return true;

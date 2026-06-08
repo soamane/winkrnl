@@ -17,9 +17,7 @@ public:
     bool Cleanup() const;
 
 private:
-    bool CleanupPiDDBCacheTable() const;
     bool CleanupPiDDBCacheList() const;
-    bool CleanupPsLoadedModuleList() const;
 
 private:
     std::shared_ptr<K32Context> k32ctx;
