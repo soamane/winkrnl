@@ -47,17 +47,18 @@ int main(int argc, char** argv)
     }
 
     auto k32ctx = std::make_shared<K32Context>(iqvw64);
-    auto vulnTraceCleaner = VulnTraceCleaner(k32ctx);
-    if (!vulnTraceCleaner.Cleanup()) {
-        std::println("[-] Failed to cleanup vulnerable driver traces");
-        return EXIT_FAILURE;
-    }
-   
+
     /*DriverMapper driverMapper = DriverMapper(k32ctx);
     if (!driverMapper.Map((void*)driverBytes.data())) {
         std::println("[-] Failed to mmap driver");
         return EXIT_FAILURE;
     }*/
+
+    auto vulnTraceCleaner = VulnTraceCleaner(k32ctx);
+    if (!vulnTraceCleaner.Cleanup()) {
+        std::println("[-] Failed to cleanup vulnerable driver traces");
+        return EXIT_FAILURE;
+    }
 
     if (!driverLoader.Unload()) {
         std::println("[-] Failed to unload vulnerable driver");
