@@ -16,18 +16,15 @@ struct PiDDBCacheEntry {
     LIST_ENTRY Links;
 };
 
-VulnTraceCleaner::VulnTraceCleaner(std::shared_ptr<K32Context> k32ctx, std::string_view k32ModuleName)
+VulnTraceCleaner::VulnTraceCleaner(std::shared_ptr<K32Context> k32ctx)
     : k32ctx(std::move(k32ctx))
-    , moduleParser(std::make_unique<K32ModuleParser>(
-          this->k32ctx->GetDriver(),
-          this->k32ctx->GetK32ModuleAddr(k32ModuleName),
-          this->k32ctx->GetK32ModuleSize(k32ModuleName)))
 {
 }
 
 bool VulnTraceCleaner::Cleanup() const
 {
-    if (!CleanupPiDDBCacheList()) {
+    const auto ntkrnlParser = K32ModuleParser(k32ctx, "ntoskrnl.exe");
+    if (!CleanupPiDDBCacheList(ntkrnlParser)) {
         std::println("[-] Failed to cleanup PiDDBCacheList");
         return false;
     }
@@ -35,9 +32,9 @@ bool VulnTraceCleaner::Cleanup() const
     return true;
 }
 
-bool VulnTraceCleaner::CleanupPiDDBCacheList() const
+bool VulnTraceCleaner::CleanupPiDDBCacheList(const K32ModuleParser& moduleParser) const
 {
-    static const auto _PiDDBCacheList = moduleParser->FindAbsoluteAddr("\x48\x8D\x15\x00\x00\x00\x00\x48\x8B\x0D\x00\x00\x00\x00\x00\x00\x00\x74", "xxx????xxx???????x", 3, 7);
+    static const auto _PiDDBCacheList = moduleParser.FindAbsoluteAddr("\x48\x8D\x15\x00\x00\x00\x00\x48\x8B\x0D\x00\x00\x00\x00\x00\x00\x00\x74", "xxx????xxx???????x", 3, 7);
     if (!_PiDDBCacheList) {
         std::println("[-] _PiDDBCacheList not found");
         return false;
