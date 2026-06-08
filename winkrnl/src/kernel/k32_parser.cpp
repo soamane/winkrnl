@@ -1,13 +1,14 @@
 ﻿#include "k32_parser.hpp"
 
+#include <kernel/k32_context.hpp>
 #include <vuln/drivers/basic_vuln_driver.hpp>
 
 #include <vector>
 
-K32ModuleParser::K32ModuleParser(const BasicVulnDriver& driver, uintptr_t moduleBase, std::size_t moduleSize)
-    : moduleBase(moduleBase)
-    , moduleSize(moduleSize)
-    , driver(std::move(driver))
+K32ModuleParser::K32ModuleParser(std::shared_ptr<K32Context> k32ctx, std::string_view moduleName)
+    : moduleBase(k32ctx->GetK32ModuleAddr(moduleName))
+    , moduleSize(k32ctx->GetK32ModuleSize(moduleName))
+    , driver(k32ctx->GetDriver())
 {
 }
 

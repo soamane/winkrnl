@@ -3,16 +3,15 @@
 #ifndef K32_MODULE_PARSER_HPP
 #define K32_MODULE_PARSER_HPP
 
-#include <cstdint>
 #include <memory>
+#include <string>
 
+class K32Context;
 class BasicVulnDriver;
 
 class K32ModuleParser {
 public:
-    K32ModuleParser(const BasicVulnDriver& driver,
-        uintptr_t moduleBase,
-        std::size_t moduleSize);
+    K32ModuleParser(std::shared_ptr<K32Context> k32ctx, std::string_view moduleName);
 
 public:
     uintptr_t FindAbsoluteAddr(
