@@ -21,7 +21,7 @@ struct Import {
 struct Relocation {
     uintptr_t address;
     WORD* infoPtr;
-    WORD countOfEntries;
+    std::size_t countOfEntries;
 };
 
 PIMAGE_NT_HEADERS GetNtHeaders(void* image);
