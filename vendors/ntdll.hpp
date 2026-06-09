@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 /*
     ntdll.h
     User Mode, 32bit & 64bit version
@@ -9666,6 +9666,14 @@ typedef struct _RTL_AVL_TABLE {
     PRTL_AVL_FREE_ROUTINE FreeRoutine;
     PVOID TableContext;
 } RTL_AVL_TABLE, *PRTL_AVL_TABLE;
+
+typedef struct _PiDDBCacheEntry {
+    LIST_ENTRY List;
+    UNICODE_STRING DriverName;
+    ULONG TimeDateStamp;
+    NTSTATUS LoadStatus;
+    LIST_ENTRY Links;
+} PiDDBCacheEntry, *PPiDDBCacheEntry;
 
 typedef struct _RTL_GENERIC_TABLE {
     PRTL_SPLAY_LINKS TableRoot;
