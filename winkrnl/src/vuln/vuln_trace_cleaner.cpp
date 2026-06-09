@@ -8,14 +8,6 @@
 #include <ntdll.hpp>
 #include <print>
 
-struct PiDDBCacheEntry {
-    LIST_ENTRY List;
-    UNICODE_STRING DriverName;
-    ULONG TimeDateStamp;
-    NTSTATUS LoadStatus;
-    LIST_ENTRY Links;
-};
-
 VulnTraceCleaner::VulnTraceCleaner(std::shared_ptr<K32Context> k32ctx)
     : k32ctx(std::move(k32ctx))
 {
@@ -44,14 +36,6 @@ bool VulnTraceCleaner::CleanupPiDDBCacheList(const K32ModuleParser& moduleParser
         std::println("[-] _PiDDBCacheList not found");
         return false;
     }
-
-    struct PiDDBCacheEntry {
-        LIST_ENTRY List;
-        UNICODE_STRING DriverName;
-        ULONG TimeDateStamp;
-        NTSTATUS LoadStatus;
-        LIST_ENTRY Links;
-    };
 
     uintptr_t link = 0;
     if (!k32ctx->GetDriver().ReadMemory(_PiDDBCacheList, &link, sizeof(link))) {
