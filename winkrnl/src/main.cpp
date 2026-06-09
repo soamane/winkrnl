@@ -38,7 +38,7 @@ int main(int argc, char** argv)
         return EXIT_FAILURE;
     }
 
-    auto iqvw64 = std::make_shared<Iqvw64Driver>("\\\\.\\Nal");
+    const auto iqvw64 = std::make_shared<Iqvw64Driver>("\\\\.\\Nal");
 
     VulnDriverLoader driverLoader = VulnDriverLoader(iqvw64);
     if (!driverLoader.Load()) {

