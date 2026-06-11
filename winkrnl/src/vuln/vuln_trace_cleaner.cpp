@@ -110,10 +110,10 @@ bool VulnTraceCleaner::CleanAvlNode(uintptr_t baseAddr, uintptr_t nodeAddr) cons
     }
 
     if (entry.TimeDateStamp == k32ctx->GetDriver().GetTimeStamp()) {
-        ULONG zero = 0;
+        ULONG timestamp = Utils::Common::GenerateRandomTimeStamp();
         k32ctx->GetDriver().WriteMemory(
             entryAddr + offsetof(PiDDBCacheEntry, TimeDateStamp),
-            &zero, sizeof(zero));
+            &timestamp, sizeof(timestamp));
 
         USHORT zeroLen = 0;
         k32ctx->GetDriver().WriteMemory(
