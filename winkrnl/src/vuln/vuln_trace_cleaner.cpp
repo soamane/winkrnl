@@ -15,7 +15,7 @@ VulnTraceCleaner::VulnTraceCleaner(std::shared_ptr<K32Context> k32ctx)
 
 bool VulnTraceCleaner::Cleanup() const
 {
-    const auto ntkrnlParser = K32ModuleParser(k32ctx, "ntoskrnl.exe");
+    static const auto ntkrnlParser = K32ModuleParser(k32ctx, "ntoskrnl.exe");
     if (!CleanupPiDDBCacheList(ntkrnlParser)) {
         std::println("[-] Failed to cleanup vulnerable driver from PiDDBCacheList");
         return false;
