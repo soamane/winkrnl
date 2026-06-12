@@ -104,7 +104,7 @@ bool DriverMapper::ResolveImports(const std::vector<Utils::PE::Import>& imports)
         const auto currentModule = K32Module(k32ctx->GetDriver(), import.name);
 
         for (auto& thunk : import.thunks) {
-            auto functionAddress = currentModule.GetK32ExportProcAddress(thunk.name);
+            const auto functionAddress = currentModule.GetK32ExportProcAddress(thunk.name);
             if (!functionAddress) {
                 spdlog::error("Failed to resolve: {}!{}", import.name, thunk.name);
                 return false;

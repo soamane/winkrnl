@@ -51,7 +51,7 @@ inline bool K32Context::InvokeK32Routine(T* outResult, uintptr_t functionAddress
     static uint8_t jmp[] = { 0x48, 0xB8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xE0 };
     *reinterpret_cast<uintptr_t*>(&jmp[2]) = functionAddress;
 
-    static const auto exNtCloseAddr = k32Module->GetK32ExportProcAddress("NtAddAtom");
+    const auto exNtCloseAddr = k32Module->GetK32ExportProcAddress("NtAddAtom");
     if (!exNtCloseAddr) {
         spdlog::error("Failed to get address of 'NtAddAtom'");
         return false;

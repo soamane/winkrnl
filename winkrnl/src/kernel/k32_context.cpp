@@ -22,7 +22,7 @@ const BasicVulnDriver& K32Context::GetDriver() const
 
 uintptr_t K32Context::AllocatePool(POOL_TYPE poolType, std::size_t size)
 {
-    static const auto exAllocPool = k32Module->GetK32ExportProcAddress("ExAllocatePoolWithTag");
+    const auto exAllocPool = k32Module->GetK32ExportProcAddress("ExAllocatePoolWithTag");
     if (!exAllocPool) {
         spdlog::error("Failed to get export address for 'ExAllocatePoolWithTag'");
         return 0;
@@ -39,7 +39,7 @@ uintptr_t K32Context::AllocatePool(POOL_TYPE poolType, std::size_t size)
 
 bool K32Context::FreePool(uintptr_t address)
 {
-    static const auto exFreePool = k32Module->GetK32ExportProcAddress("ExFreePool");
+    const auto exFreePool = k32Module->GetK32ExportProcAddress("ExFreePool");
     if (!exFreePool) {
         spdlog::error("Failed to get export address for 'ExFreePool'");
         return false;
@@ -50,7 +50,7 @@ bool K32Context::FreePool(uintptr_t address)
 
 bool K32Context::RtlDeleteElementGenericTableAvl(PVOID table, PVOID entry)
 {
-    static const auto rtlDeleteElement = k32Module->GetK32ExportProcAddress("RtlDeleteElementGenericTableAvl");
+    const auto rtlDeleteElement = k32Module->GetK32ExportProcAddress("RtlDeleteElementGenericTableAvl");
     if (!rtlDeleteElement) {
         spdlog::error("Failed to get export address for 'RtlDeleteElementGenericTableAvl'");
         return false;
@@ -67,7 +67,7 @@ bool K32Context::RtlDeleteElementGenericTableAvl(PVOID table, PVOID entry)
 
 PVOID K32Context::RtlLookupElementGenericTableAvl(PRTL_AVL_TABLE table, PVOID buffer)
 {
-    static const auto rtlLookupElement = k32Module->GetK32ExportProcAddress("RtlLookupElementGenericTableAvl");
+    const auto rtlLookupElement = k32Module->GetK32ExportProcAddress("RtlLookupElementGenericTableAvl");
     if (!rtlLookupElement) {
         spdlog::error("Failed to get export address for 'RtlLookupElementGenericTableAvl'");
         return nullptr;
