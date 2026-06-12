@@ -173,6 +173,7 @@ winkrnl cleans three kernel structures after mapping:
 - `SeLoadDriverPrivilege` (enabled automatically)
 - MSVC with C++20 (`/std:c++20`)
 - [spdlog](https://github.com/gabime/spdlog)
+- vcpkg integration (optional)
 
 ---
 
@@ -181,20 +182,3 @@ winkrnl cleans three kernel structures after mapping:
 ```
 winkrnl.exe <driver_path>
 ```
-
----
-
-## Building
-
-Open the `.sln` in Visual Studio 2022 and build `x64 Release`, or:
-
-```
-cmake -B build -DCMAKE_BUILD_TYPE=Release
-cmake --build build
-```
-
----
-
-## Disclaimer
-
-This project is intended for **security research and educational purposes only**. Do not use on systems you do not own or have explicit permission to test. The authors take no responsibility for misuse.
