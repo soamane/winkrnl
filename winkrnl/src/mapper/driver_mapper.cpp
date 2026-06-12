@@ -67,6 +67,7 @@ bool DriverMapper::Map(void* fileBytes)
     if (!k32ctx->InvokeK32Routine(&status, entryPointAddr, kernelBaseAddr)) {
         spdlog::error("Failed to call DriverEntry");
         VirtualFree(imageBaseAddr, 0, MEM_RELEASE);
+        k32ctx->FreePool(kernelBaseAddr);
         return false;
     }
 

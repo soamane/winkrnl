@@ -107,5 +107,10 @@ bool VulnTraceCleaner::CleanupPiDDBCacheTable() const
         return false;
     }
 
-    return k32ctx->RtlDeleteElementGenericTableAvl((PRTL_AVL_TABLE)_PiDDBCacheTable, entry);
+    if (!k32ctx->RtlDeleteElementGenericTableAvl((PRTL_AVL_TABLE)_PiDDBCacheTable, entry)) {
+        return false;
+    }
+
+    spdlog::info("Vulnerable driver entry removed from PiDDBCacheTable");
+    return true;
 }
