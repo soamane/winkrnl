@@ -8,12 +8,10 @@
 
 #include <spdlog/spdlog.h>
 
-VulnDriverLoader::VulnDriverLoader(std::shared_ptr<BasicVulnDriver> driver)
+VulnDriverLoader::VulnDriverLoader()
     : isLoaded(false)
-    , drvPath(std::filesystem::temp_directory_path() / driver->GetName())
-    , ntPath(L"\\Registry\\Machine\\SYSTEM\\CurrentControlSet\\Services\\" + drvPath.stem().wstring())
-    , driver(std::move(driver))
-    , registry(std::make_unique<ServiceRegistry>(drvPath))
+    , driver(nullptr)
+    , registry(nullptr)
 {
 }
 
@@ -24,9 +22,41 @@ VulnDriverLoader::~VulnDriverLoader()
     }
 }
 
+VulnDriverLoader& VulnDriverLoader::GetInstance()
+{
+    static VulnDriverLoader instance;
+    return instance;
+}
+
+bool VulnDriverLoader::LoadDriver(std::shared_ptr<BasicVulnDriver> driver)
+{
+    if (isLoaded) {
+        if (!Unload()) {
+            spdlog::error("Failed to unload previous driver");
+            return false;
+        }
+    }
+
+    if (this->driver == driver) {
+        return true;
+    }
+
+    this->driver = std::move(driver);
+    driverPath = std::filesystem::temp_directory_path() / this->driver->GetName();
+    ntPath = L"\\Registry\\Machine\\System\\CurrentControlSet\\Services\\" + driverPath.stem().wstring();
+    registry = std::make_unique<ServiceRegistry>(driverPath);
+
+    isLoaded = Load();
+    if (!isLoaded) {
+        return false;
+    }
+
+    return true;
+}
+
 bool VulnDriverLoader::Load()
 {
-    if (!Utils::FS::CreateFileFromMemory(drvPath, driver->GetData())) {
+    if (!Utils::FS::CreateFileFromMemory(driverPath, driver->GetData())) {
         spdlog::error("Failed to create vulnerable driver from memory");
         return false;
     }
@@ -73,7 +103,7 @@ bool VulnDriverLoader::Unload()
     driver->CloseDevice();
 
     std::error_code ec;
-    std::filesystem::remove(drvPath, ec);
+    std::filesystem::remove(driverPath, ec);
     if (ec) {
         spdlog::error("Failed to remove driver file, error code: {}", ec.value());
         return false;

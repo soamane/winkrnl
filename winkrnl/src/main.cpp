@@ -12,12 +12,30 @@
 
 #include <vuln/vuln_trace_cleaner.hpp>
 
+#include <DbgHelp.h>
 #include <filesystem>
 
 #include <spdlog/spdlog.h>
 
+LONG WINAPI CrashHandler(EXCEPTION_POINTERS* ExceptionInfo)
+{
+    __try {
+        VulnDriverLoader::GetInstance().Unload();
+    } __except (EXCEPTION_EXECUTE_HANDLER) {
+        spdlog::critical("Unload failed during crash handler");
+    }
+
+    spdlog::critical("Unhandled exception: 0x{:X} at 0x{:X}",
+        ExceptionInfo->ExceptionRecord->ExceptionCode,
+        reinterpret_cast<uintptr_t>(ExceptionInfo->ExceptionRecord->ExceptionAddress));
+
+    return EXCEPTION_EXECUTE_HANDLER;
+}
+
 int main(int argc, char** argv)
 {
+    SetUnhandledExceptionFilter(CrashHandler);
+
     spdlog::set_level(spdlog::level::trace);
 
     if (argc != 2) {
@@ -44,8 +62,8 @@ int main(int argc, char** argv)
 
     const auto iqvw64 = std::make_shared<Iqvw64Driver>("\\\\.\\Nal");
 
-    VulnDriverLoader driverLoader = VulnDriverLoader(iqvw64);
-    if (!driverLoader.Load()) {
+    static auto& driverLoader = VulnDriverLoader::GetInstance();
+    if (!driverLoader.LoadDriver(iqvw64)) {
         spdlog::error("Failed to load vulnerable driver");
         return EXIT_FAILURE;
     }
@@ -62,11 +80,6 @@ int main(int argc, char** argv)
     VulnTraceCleaner vulnTraceCleaner(k32ctx, k32Module);
     if (!vulnTraceCleaner.Cleanup()) {
         spdlog::error("Failed to cleanup vulnerable driver traces");
-        return EXIT_FAILURE;
-    }
-
-    if (!driverLoader.Unload()) {
-        spdlog::error("Failed to unload vulnerable driver");
         return EXIT_FAILURE;
     }
 
