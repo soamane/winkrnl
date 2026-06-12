@@ -8,99 +8,114 @@ A Windows kernel driver mapper using a vulnerable driver (IQVW64) for manual map
 
 ## Overview
 
-winkrnl manually maps a kernel driver into memory without using the Windows driver loading infrastructure. It exploits the `iqvw64e.sys` (Intel Network Adapter Diagnostic Driver) to gain arbitrary kernel read/write primitives, maps the target driver, resolves its imports and relocations, calls its `DriverEntry`, then cleans up all traces of the vulnerable driver from kernel structures.
+winkrnl manually maps a kernel driver into memory without using the Windows driver loading infrastructure. It exploits `iqvw64e.sys` (Intel Network Adapter Diagnostic Driver) to gain arbitrary kernel read/write primitives, maps the target driver, resolves its imports and relocations, calls its `DriverEntry`, then cleans up all traces of the vulnerable driver from kernel structures.
 
 ---
 
 ## Differences from kdmapper
 
-[kdmapper](https://github.com/TheCruZ/kdmapper) is the most widely known open-source kernel mapper. winkrnl differs in several key areas:
+[kdmapper](https://github.com/TheCruZ/kdmapper) is the most widely known open-source kernel mapper. The core technique is the same — both use iqvw64 and the NtAddAtom hook. The difference is in how the code is written.
 
-### Architecture
+### kdmapper is a single translation unit
 
-| | winkrnl | kdmapper |
-|---|---|---|
-| Language standard | C++20 | C++17 |
-| Driver abstraction | `BasicVulnDriver` base class | Monolithic, iqvw64-specific |
-| Extensibility | Add new vuln drivers via inheritance | Requires rewrite |
-| Logging | spdlog (leveled) | `std::cout` / `printf` |
+kdmapper is essentially one large file. All IOCTL logic, memory primitives, PE mapping, and trace cleanup are tangled together with no separation of concerns. Adding a new vulnerable driver means rewriting the core. Swapping out the trace cleanup strategy means touching the same file as the mapper.
 
-### Driver abstraction layer
+winkrnl splits every concern into its own class with a clear responsibility:
 
-winkrnl introduces `BasicVulnDriver` — an abstract base class that decouples the mapper logic from the specific vulnerable driver being used. Adding support for a new vulnerable driver requires only implementing four virtual methods:
+```
+vuln/drivers/BasicVulnDriver   — abstract kernel primitives (read, write, map, unmap)
+vuln/drivers/Iqvw64Driver      — iqvw64-specific IOCTL implementation
+vuln/VulnDriverLoader          — driver lifecycle: drop, load, unload, registry
+vuln/VulnTraceCleaner          — PiDDBCacheList + PiDDBCacheTable cleanup
+kernel/K32Module               — kernel module: base address, size, export resolver
+kernel/K32ModuleParser         — pattern scanning, RIP-relative address resolution
+kernel/K32Context              — pool alloc/free, kernel routine invocation
+mapper/DriverMapper            — PE mapping: headers, sections, relocations, imports
+utils/                         — pe_utils, fs_utils, cmn_utils
+```
+
+Each layer only knows about the layer below it. `DriverMapper` knows nothing about iqvw64. `VulnTraceCleaner` knows nothing about PE mapping. This is not how kdmapper is structured.
+
+### Adding a new vulnerable driver
+
+In kdmapper — fork and rewrite.
+
+In winkrnl — inherit from `BasicVulnDriver` and implement four methods:
 
 ```cpp
-virtual bool KeMemMove(uintptr_t dst, uintptr_t src, std::size_t size) const = 0;
-virtual bool KeUnmapIoSpace(uintptr_t virtualAddr, std::size_t size) const = 0;
+virtual bool     KeMemMove(uintptr_t dst, uintptr_t src, std::size_t size) const = 0;
+virtual bool     KeUnmapIoSpace(uintptr_t virtualAddr, std::size_t size) const = 0;
 virtual uintptr_t KeMapIoSpace(uintptr_t physicalAddr, std::size_t size) const = 0;
 virtual uintptr_t KeGetPhysicalAddress(uintptr_t virtualAddr) const = 0;
 ```
 
-kdmapper hardcodes all IOCTL logic for iqvw64 directly into its mapping code.
+The rest of the codebase — mapper, trace cleaner, context — works unchanged.
 
-### Kernel routine invocation
+### Generic kernel routine invocation
 
-winkrnl uses a JMP hook on `NtAddAtom` (a rarely-used syscall) to invoke arbitrary kernel functions:
-
-```
-1. Resolve NtAddAtom address via export parser
-2. Write: mov rax, <target>; jmp rax  (12 bytes)
-3. Call NtAddAtom from user space — executes target kernel function
-4. Restore original bytes
-```
-
-This approach allows calling any exported kernel function with arbitrary arguments via a single generic template:
+kdmapper hardcodes individual wrapper functions for each kernel call it needs. winkrnl exposes a single variadic template:
 
 ```cpp
 template <typename T, typename... A>
 bool InvokeK32Routine(T* outResult, uintptr_t functionAddress, A... args);
 ```
 
-kdmapper uses the same NtAddAtom technique but with a less generic implementation.
+Any exported kernel function can be called with any signature. Adding `RtlLookupElementGenericTableAvl`, `RtlDeleteElementGenericTableAvl`, or `ExAllocatePoolWithTag` requires zero new plumbing — just pass the address and arguments.
 
-### Trace cleanup
+### AVL tree cleanup
 
-winkrnl cleans up both kernel structures that record driver load history:
+kdmapper walks the AVL tree nodes manually to find and remove the `PiDDBCacheTable` entry. This is fragile: it relies on the internal node layout staying consistent across Windows versions.
 
-**PiDDBCacheList** — manually unlinks the entry by rewriting `Flink`/`Blink` pointers via kernel write primitives.
+winkrnl calls the kernel's own AVL functions through the `InvokeK32Routine` hook:
 
-**PiDDBCacheTable** — uses `RtlLookupElementGenericTableAvl` to find the entry by `TimeDateStamp` + driver name, then removes it with `RtlDeleteElementGenericTableAvl`. This is the correct approach: it goes through the AVL tree's own comparator rather than manually walking tree nodes.
+```cpp
+// Find entry using the table's own comparator
+const auto entry = k32ctx->RtlLookupElementGenericTableAvl(table, &compared);
 
-kdmapper also cleans both structures but walks the AVL tree manually, which is fragile across Windows versions.
+// Remove via the kernel's own balancing logic
+k32ctx->RtlDeleteElementGenericTableAvl(table, entry);
+```
 
-**MmUnloadedDrivers** — the vulnerable driver is registered with a random 16-character name (generated at runtime via `GenerateRandomString`), which means `MiRememberUnloadedDriver` records an unrecognizable name. No additional cleanup of this structure is needed.
+This is the correct approach — the kernel handles node relinking and tree rebalancing internally.
+
+### RAII throughout
+
+kdmapper does manual cleanup with raw `if` chains. winkrnl uses RAII for every resource:
+
+- `VulnDriverLoader` unloads the driver and deletes the file in its destructor
+- `BasicVulnDriver` closes the device handle in its destructor  
+- `VirtualAlloc` buffers are wrapped in `unique_ptr` with a custom deleter
+- Registry entries and driver files are cleaned up as part of `Unload()`
+
+No resource can leak without it being a bug in the destructor.
+
+### C++20 and modern patterns
+
+| | winkrnl | kdmapper |
+|---|---|---|
+| Standard | C++20 | C++17 |
+| Logging | spdlog (trace/info/error levels) | `std::cout` / `printf` |
+| Memory | `unique_ptr`, `shared_ptr`, RAII | Manual `delete` / `VirtualFree` |
+| Null checks | `std::optional`, exceptions in constructors | Raw pointer checks |
+| Compile-time checks | `static_assert` on all IOCTL struct offsets | None |
+
+The `static_assert` on IOCTL structure offsets is worth calling out specifically — it catches padding issues at compile time rather than at runtime when the kernel silently does the wrong thing:
+
+```cpp
+static_assert(offsetof(CopyMemoryRequest, src)  == 0x10);
+static_assert(offsetof(CopyMemoryRequest, dist) == 0x18);
+static_assert(offsetof(CopyMemoryRequest, size) == 0x20);
+```
 
 ### Random driver name
+
+The vulnerable driver is dropped to `%TEMP%\<random16chars>.sys` on every run, generated at construction time:
 
 ```cpp
 name(Utils::Common::GenerateRandomString(16))
 ```
 
-The vulnerable driver is dropped to `%TEMP%\<random>.sys` on every run. This makes static detection by filename trivial to evade and avoids registry key collisions on repeated runs.
-
----
-
-## Architecture
-
-```
-winkrnl
-├── vuln/
-│   ├── drivers/
-│   │   ├── BasicVulnDriver      # Abstract base: IOCTL primitives
-│   │   └── Iqvw64Driver         # IQVW64 implementation
-│   ├── VulnDriverLoader         # Load/unload lifecycle + registry
-│   └── VulnTraceCleaner         # PiDDBCacheList + PiDDBCacheTable cleanup
-├── kernel/
-│   ├── K32Module                # Kernel module base + export resolver
-│   ├── K32ModuleParser          # Pattern scanning + RIP-relative resolution
-│   └── K32Context               # Pool alloc/free + kernel routine invocation
-├── mapper/
-│   └── DriverMapper             # PE mapping: headers, sections, relocs, imports
-└── utils/
-    ├── pe_utils                 # NT headers, import/relocation parsing
-    ├── fs_utils                 # File I/O
-    └── cmn_utils                # Random string generation
-```
+`MiRememberUnloadedDriver` records this name in `MmUnloadedDrivers` — since it is unrecognizable and different on every run, no additional cleanup of that structure is needed.
 
 ---
 
@@ -116,7 +131,7 @@ winkrnl
 7.  Copy PE headers and sections to local buffer
 8.  Resolve relocations (delta = kernelBase - ImageBase)
 9.  Resolve imports (K32Module export lookup per dependency)
-10. Write mapped image to kernel pool via WriteMappedMemory
+10. Write mapped image to kernel via WriteMappedMemory
         (virtual → physical → MmMapIoSpace → write → MmUnmapIoSpace)
 11. Call DriverEntry(kernelBase, NULL) via NtAddAtom hook
 12. Clean PiDDBCacheList  — unlink via Flink/Blink rewrite
@@ -144,20 +159,16 @@ winkrnl
 winkrnl.exe <driver_path>
 ```
 
-```
-winkrnl.exe C:\path\to\driver.sys
-```
-
 ---
 
 ## Building
+
+Open the `.sln` in Visual Studio 2022 and build `x64 Release`, or:
 
 ```
 cmake -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build
 ```
-
-Or open the `.sln` in Visual Studio 2022 and build `x64 Release`.
 
 ---
 
