@@ -74,16 +74,16 @@ Any exported kernel function can be called with any signature. Adding `RtlLookup
 
 ### AVL tree cleanup
 
-kdmapper walks AVL tree nodes manually to find and remove the `PiDDBCacheTable` entry. This is fragile — it relies on the internal node layout staying consistent across Windows versions.
+Both kdmapper and winkrnl call the kernel's own AVL functions to remove the `PiDDBCacheTable` entry. The difference is in how those calls are made.
 
-winkrnl calls the kernel's own AVL functions through the `InvokeK32Routine` hook:
+kdmapper has individual hardcoded wrapper functions for each kernel routine it needs. winkrnl uses a single variadic template that works for any kernel function:
 
 ```cpp
 const auto entry = k32ctx->RtlLookupElementGenericTableAvl(table, &compared);
 k32ctx->RtlDeleteElementGenericTableAvl(table, entry);
 ```
 
-The kernel handles node relinking and tree rebalancing internally.
+Adding a new kernel call in winkrnl requires no new plumbing — pass the address and arguments, the template handles the rest.
 
 ### PsLoadedModuleList cleanup
 
