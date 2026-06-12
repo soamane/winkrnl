@@ -89,17 +89,6 @@ Adding a new kernel call in winkrnl requires no new plumbing — pass the addres
 
 winkrnl walks `PsLoadedModuleList` and zeroes `BaseDllName` in the driver's `LDR_DATA_TABLE_ENTRY` before unloading. When the kernel calls `MiRememberUnloadedDriver` during unload, it checks `Name.Length > 0` before recording the entry — an empty name means the driver is never written to `MmUnloadedDrivers`.
 
-```ams
-_UNKNOWN **__fastcall MiRememberUnloadedDriver(const void **a1, __int64 a2, unsigned int a3)
-{
-...
-  result = &retaddr;
-  v4 = a3;
-  if ( *(_WORD *)a1 ) <-- Check  if (Name.Length > 0)
-  {
-    v7 = (char *)MmUnloadedDrivers;
-    if ( MmUnloadedDrivers )
-```
 ### RAII throughout
 
 kdmapper does manual cleanup with raw `if` chains. winkrnl uses RAII for every resource:
@@ -141,27 +130,31 @@ winkrnl cleans three kernel structures after mapping:
 
 ---
 
-## How It Works
+## Example Output
 
 ```
-1.  Drop vulnerable driver to %TEMP%\<random16chars>.sys
-2.  Create registry entry under HKLM\...\Services\<random>
-3.  NtLoadDriver → load vulnerable driver
-4.  Open device handle
-5.  Parse ntoskrnl.exe exports via kernel read primitives
-6.  Allocate NonPagedPool in kernel (ExAllocatePoolWithTag)
-7.  Copy PE headers and sections to local buffer
-8.  Resolve relocations (delta = kernelBase - ImageBase)
-9.  Resolve imports (K32Module export lookup per dependency)
-10. Write mapped image to kernel via WriteMappedMemory
-        (virtual → physical → MmMapIoSpace → write → MmUnmapIoSpace)
-11. Call DriverEntry(kernelBase, NULL) via NtAddAtom hook
-12. Zero BaseDllName in PsLoadedModuleList
-13. Clean PiDDBCacheList  — unlink via Flink/Blink rewrite
-14. Clean PiDDBCacheTable — RtlDeleteElementGenericTableAvl
-15. NtUnloadDriver → unload vulnerable driver
-16. Delete registry entry
-17. Delete driver file from disk
+winkrnl.exe driver.sys
+[info] Module 'ntoskrnl.exe' initialized: base=0xFFFFF80482A00000, size=0x1450000
+[info] SizeOfImage: 0x7000, SizeOfSections: 0x6000
+[info] Export 'ExAllocatePoolWithTag' found at 0xFFFFF80483573010
+[info] Export 'NtAddAtom' found at 0xFFFFF804831C19B0
+[info] Kernel memory allocated at: 0xFFFFE601349C4000
+[info] Processed 1 relocation blocks
+[info] Import: ntoskrnl.exe
+[info] Module 'ntoskrnl.exe' initialized: base=0xFFFFF80482A00000, size=0x1450000
+[info] Export 'DbgPrintEx' found at 0xFFFFF80482C060E0
+[info]     DbgPrintEx -> 0xFFFFF80482C060E0
+[info] Imports resolved
+[info] Image written to kernel
+[info] Calling DriverEntry at 0xFFFFE601349C5000
+[info] Cache hit for export 'NtAddAtom': 0xFFFFF804831C19B0
+[info] DriverEntry returned: 0x0
+[info] Driver loaded at 0xFFFFE601349C4000
+[info] Export 'RtlLookupElementGenericTableAvl' found at 0xFFFFF80482DF92F0
+[info] Cache hit for export 'NtAddAtom': 0xFFFFF804831C19B0
+[info] Export 'RtlDeleteElementGenericTableAvl' found at 0xFFFFF80482DE9600
+[info] Cache hit for export 'NtAddAtom': 0xFFFFF804831C19B0
+[info] Program has successfully completed its execution
 ```
 
 ---
@@ -173,7 +166,6 @@ winkrnl cleans three kernel structures after mapping:
 - `SeLoadDriverPrivilege` (enabled automatically)
 - MSVC with C++20 (`/std:c++20`)
 - [spdlog](https://github.com/gabime/spdlog)
-- vcpkg integration (optional)
 
 ---
 
