@@ -3,14 +3,6 @@
 #include "cmn_utils.hpp"
 #include <fstream>
 
-std::filesystem::path Utils::FS::GenerateRandomTempPath(std::string_view extension)
-{
-    auto filename = Utils::Common::GenerateRandomString(16);
-    filename += extension;
-
-    return std::filesystem::temp_directory_path() / filename;
-}
-
 std::vector<uint8_t> Utils::FS::ReadBytesFromFile(const std::filesystem::path& path)
 {
     std::ifstream file(path, std::ios::binary);
