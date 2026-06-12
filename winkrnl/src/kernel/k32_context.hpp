@@ -7,8 +7,8 @@
 
 #include <ntdll.hpp>
 
-#include <print>
 #include <memory>
+#include <print>
 #include <string_view>
 
 class K32Context {
@@ -22,6 +22,8 @@ public:
 public:
     uintptr_t AllocatePool(POOL_TYPE poolType, std::size_t size);
     bool FreePool(uintptr_t address);
+    bool RtlDeleteElementGenericTableAvl(PVOID table, PVOID entry);
+    PVOID RtlLookupElementGenericTableAvl(PRTL_AVL_TABLE table, PVOID buffer);
 
 public:
     template <typename T, typename... A>

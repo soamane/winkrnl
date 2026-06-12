@@ -48,6 +48,40 @@ bool K32Context::FreePool(uintptr_t address)
     return InvokeK32Routine(exFreePool, address);
 }
 
+bool K32Context::RtlDeleteElementGenericTableAvl(PVOID table, PVOID entry)
+{
+    static const auto rtlDeleteElement = GetK32ExportProcAddr("ntoskrnl.exe", "RtlDeleteElementGenericTableAvl");
+    if (!rtlDeleteElement) {
+        std::println("[-] Failed to get export proc address");
+        return 0;
+    }
+
+    bool retval = false;
+    if (!InvokeK32Routine(&retval, rtlDeleteElement, table, entry)) {
+        std::println("[-] Failed to invoke RtlDeleteElementGenericTableAvl routine");
+        return false;
+    }
+
+    return retval;
+}
+
+PVOID K32Context::RtlLookupElementGenericTableAvl(PRTL_AVL_TABLE table, PVOID buffer)
+{
+    static const auto rtlLookupElement = GetK32ExportProcAddr("ntoskrnl.exe", "RtlLookupElementGenericTableAvl");
+    if (!rtlLookupElement) {
+        std::println("[-] Failed to get export proc address");
+        return 0;
+    }
+
+    PVOID retval = nullptr;
+    if (!InvokeK32Routine(&retval, rtlLookupElement, table, buffer)) {
+        std::println("[-] Failed to invoke RtlLookupElementGenericTableAvl routine");
+        return nullptr;
+    }
+
+    return retval;
+}
+
 uintptr_t K32Context::GetK32ModuleAddr(std::string_view moduleName)
 {
     LPVOID drivers[1024];
