@@ -2,6 +2,7 @@
 
 #include <kernel/k32_context.hpp>
 #include <kernel/k32_module.hpp>
+#include <spdlog/spdlog.h>
 
 DriverMapper::DriverMapper(std::shared_ptr<K32Context> k32ctx, std::shared_ptr<K32Module> k32Module)
     : k32ctx(std::move(k32ctx))
@@ -13,27 +14,27 @@ bool DriverMapper::Map(void* fileBytes)
 {
     PIMAGE_NT_HEADERS ntHeaders = Utils::PE::GetNtHeaders(fileBytes);
     if (!ntHeaders) {
-        std::println("[-] Failed to fetch image NT headers");
+        spdlog::error("Failed to fetch image NT headers");
         return false;
     }
 
     PVOID imageBaseAddr = VirtualAlloc(nullptr, ntHeaders->OptionalHeader.SizeOfImage, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
     if (!imageBaseAddr) {
-        std::println("[-] Failed to alloc memory for image");
+        spdlog::error("Failed to alloc memory for image");
         return false;
     }
 
     const auto imageSize = ntHeaders->OptionalHeader.SizeOfImage - IMAGE_FIRST_SECTION(ntHeaders)->VirtualAddress;
-    std::println("[~] SizeOfImage: 0x{:X}, SizeOfSections: 0x{:X}", ntHeaders->OptionalHeader.SizeOfImage, imageSize);
+    spdlog::info("SizeOfImage: 0x{:X}, SizeOfSections: 0x{:X}", ntHeaders->OptionalHeader.SizeOfImage, imageSize);
 
     uintptr_t kernelBaseAddr = k32ctx->AllocatePool(POOL_TYPE::NonPagedPool, imageSize);
     if (!kernelBaseAddr) {
-        std::println("[-] Failed to allocate kernel memory");
+        spdlog::error("Failed to allocate kernel memory");
         VirtualFree(imageBaseAddr, 0, MEM_RELEASE);
         return false;
     }
 
-    std::println("[+] Kernel memory allocated at: 0x{:016X}", kernelBaseAddr);
+    spdlog::info("Kernel memory allocated at: 0x{:016X}", kernelBaseAddr);
 
     CopyToMemory(reinterpret_cast<uintptr_t>(imageBaseAddr), ntHeaders, fileBytes);
 
@@ -41,36 +42,36 @@ bool DriverMapper::Map(void* fileBytes)
     ResolveRelocations(kernelBaseAddr - ntHeaders->OptionalHeader.ImageBase, ntHeaders, relocs);
 
     if (!ResolveImports(Utils::PE::GetImports(imageBaseAddr, ntHeaders))) {
-        std::println("[-] Failed to resolve imports");
+        spdlog::error("Failed to resolve imports");
         VirtualFree(imageBaseAddr, 0, MEM_RELEASE);
         k32ctx->FreePool(kernelBaseAddr);
         return false;
     }
 
-    std::println("[+] Imports resolved");
+    spdlog::info("Imports resolved");
 
     const auto& driver = k32ctx->GetDriver();
     if (!driver.WriteMemory(kernelBaseAddr, imageBaseAddr, imageSize)) {
-        std::println("[-] Failed to write memory to kernel");
+        spdlog::error("Failed to write image to kernel");
         VirtualFree(imageBaseAddr, 0, MEM_RELEASE);
         k32ctx->FreePool(kernelBaseAddr);
         return false;
     }
 
-    std::println("[+] Image written to kernel");
+    spdlog::info("Image written to kernel");
 
     uintptr_t entryPointAddr = kernelBaseAddr + ntHeaders->OptionalHeader.AddressOfEntryPoint;
-    std::println("[*] Calling DriverEntry at 0x{:016X}", entryPointAddr);
+    spdlog::info("Calling DriverEntry at 0x{:016X}", entryPointAddr);
 
     NTSTATUS status;
     if (!k32ctx->InvokeK32Routine(&status, entryPointAddr, kernelBaseAddr)) {
-        std::println("[-] Failed to call DriverEntry");
+        spdlog::error("Failed to call DriverEntry");
         VirtualFree(imageBaseAddr, 0, MEM_RELEASE);
         return false;
     }
 
-    std::println("[+] DriverEntry returned: 0x{:X}", static_cast<ULONG>(status));
-    std::println("[+] Driver loaded at 0x{:016X}", kernelBaseAddr);
+    spdlog::info("DriverEntry returned: 0x{:X}", static_cast<ULONG>(status));
+    spdlog::info("Driver loaded at 0x{:016X}", kernelBaseAddr);
 
     VirtualFree(imageBaseAddr, 0, MEM_RELEASE);
     return true;
@@ -78,19 +79,15 @@ bool DriverMapper::Map(void* fileBytes)
 
 void DriverMapper::CopyToMemory(uintptr_t baseAddress, PIMAGE_NT_HEADERS ntHeaders, void* data)
 {
-    // 1. Copy PE headers
     std::memcpy(reinterpret_cast<void*>(baseAddress), data, ntHeaders->OptionalHeader.SizeOfHeaders);
 
-    // 2. Copy sections
     PIMAGE_SECTION_HEADER sectionHeader = IMAGE_FIRST_SECTION(ntHeaders);
     for (WORD i = 0; i < ntHeaders->FileHeader.NumberOfSections; ++i) {
 
-        // Skip uninitialized sections
         if (sectionHeader[i].Characteristics & IMAGE_SCN_CNT_UNINITIALIZED_DATA) {
             continue;
         }
 
-        // Skip if section size out of range image size
         if (sectionHeader[i].VirtualAddress + sectionHeader[i].SizeOfRawData > ntHeaders->OptionalHeader.SizeOfImage) {
             continue;
         }
@@ -108,12 +105,12 @@ bool DriverMapper::ResolveImports(const std::vector<Utils::PE::Import>& imports)
         for (auto& thunk : import.thunks) {
             auto functionAddress = currentModule.GetK32ExportProcAddress(thunk.name);
             if (!functionAddress) {
-                std::println("[-] Failed to resolve: {}!{}", import.name, thunk.name);
+                spdlog::error("Failed to resolve: {}!{}", import.name, thunk.name);
                 return false;
             }
 
             *thunk.address = functionAddress;
-            std::println("    [+] {} -> 0x{:016X}", thunk.name, functionAddress);
+            spdlog::info("    {} -> 0x{:016X}", thunk.name, functionAddress);
         }
     }
 

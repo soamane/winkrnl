@@ -10,7 +10,7 @@ public:
     Iqvw64Driver(std::string_view symbLink);
 
 public:
-    uintptr_t GetTimeStamp() const override;
+    ULONG GetTimeStamp() const override;
     const std::vector<uint8_t>& GetData() const override;
 
 private:

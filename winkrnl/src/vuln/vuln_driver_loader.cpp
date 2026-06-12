@@ -3,9 +3,10 @@
 #include "drivers/basic_vuln_driver.hpp"
 #include "service_registry.hpp"
 
-#include <print>
 #include <utils/fs_utils.hpp>
 #include <windows.h>
+
+#include <spdlog/spdlog.h>
 
 VulnDriverLoader::VulnDriverLoader(std::shared_ptr<BasicVulnDriver> driver)
     : isLoaded(false)
@@ -26,12 +27,12 @@ VulnDriverLoader::~VulnDriverLoader()
 bool VulnDriverLoader::Load()
 {
     if (!Utils::FS::CreateFileFromMemory(drvPath, driver->GetData())) {
-        std::println("[-] Failed to create vulnerable driver");
+        spdlog::error("Failed to create vulnerable driver from memory");
         return false;
     }
 
     if (!registry->CreateRegistryEntry()) {
-        std::println("[-] Failed to create registry entry");
+        spdlog::error("Failed to create driver registry entry");
         return false;
     }
 
@@ -40,12 +41,12 @@ bool VulnDriverLoader::Load()
 
     NTSTATUS status = NtLoadDriver(&svcName);
     if (!NT_SUCCESS(status)) {
-        std::println("[-] NtLoadDriver failed: 0x{:08X}", static_cast<ULONG>(status));
+        spdlog::error("NtLoadDriver error: 0x{:X}", status);
         return false;
     }
 
     if (!driver->OpenDevice()) {
-        std::println("[-] Failed to open driver device");
+        spdlog::error("Failed to open driver device");
         return false;
     }
 
@@ -60,12 +61,12 @@ bool VulnDriverLoader::Unload()
 
     NTSTATUS status = NtUnloadDriver(&svcName);
     if (!NT_SUCCESS(status)) {
-        std::println("[-] NtUnloadDriver failed: 0x{:08X}", static_cast<ULONG>(status));
+        spdlog::error("NtUnloadDriver error: 0x{}", status);
         return false;
     }
 
     if (!registry->DeleteRegistryEntry()) {
-        std::println("[-] Failed to delete registry entry");
+        spdlog::error("Failed to delete registry entry");
         return false;
     }
 
@@ -74,7 +75,7 @@ bool VulnDriverLoader::Unload()
     std::error_code ec;
     std::filesystem::remove(drvPath, ec);
     if (ec) {
-        std::println("[-] Failed to remove driver file: {}", ec.message());
+        spdlog::error("Failed to remove driver file, error code: {}", ec.value());
         return false;
     }
 
@@ -86,14 +87,14 @@ bool VulnDriverLoader::EnableLoadPrivileges()
 {
     HANDLE hToken;
     if (!OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, &hToken)) {
-        std::println("[-] Failed to open process token");
+        spdlog::error("Failed to open process token");
         return false;
     }
 
     LUID luid;
     if (!LookupPrivilegeValueA(NULL, SE_LOAD_DRIVER_NAME, &luid)) {
         CloseHandle(hToken);
-        std::println("[-] Failed to lookup privilege value");
+        spdlog::error("Failed to lookup privilege value");
         return false;
     }
 
@@ -104,7 +105,7 @@ bool VulnDriverLoader::EnableLoadPrivileges()
 
     if (!AdjustTokenPrivileges(hToken, FALSE, &tp, sizeof(TOKEN_PRIVILEGES), NULL, NULL)) {
         CloseHandle(hToken);
-        std::println("[-] Failed to adjust token privileges");
+        spdlog::error("Failed to adjust token privileges");
         return false;
     }
 

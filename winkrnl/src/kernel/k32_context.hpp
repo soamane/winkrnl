@@ -12,6 +12,8 @@
 #include <print>
 #include <string_view>
 
+#include <spdlog/spdlog.h>
+
 class K32Module;
 
 class K32Context {
@@ -42,26 +44,27 @@ private:
 
 #endif // !K32_CONTEXT_HPP
 
+
 template <typename T, typename... A>
-inline bool K32Context::InvokeK32Routine(T* outResult, uintptr_t functionAddress, const A... args)
+inline bool K32Context::InvokeK32Routine(T* outResult, uintptr_t functionAddress, A... args)
 {
     static uint8_t jmp[] = { 0x48, 0xB8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xE0 };
     *reinterpret_cast<uintptr_t*>(&jmp[2]) = functionAddress;
 
     static const auto exNtCloseAddr = k32Module->GetK32ExportProcAddress("NtAddAtom");
     if (!exNtCloseAddr) {
-        std::println("[-] Failed to get address of export function");
+        spdlog::error("Failed to get address of 'NtAddAtom'");
         return false;
     }
 
     uint8_t origin[ARRAYSIZE(jmp)];
     if (!driver->ReadMemory(exNtCloseAddr, origin, sizeof(jmp))) {
-        std::println("[-] Failed to read origin function instruction");
+        spdlog::error("Failed to read original bytes at 0x{:X}", exNtCloseAddr);
         return false;
     }
 
     if (!driver->WriteMappedMemory(exNtCloseAddr, jmp, sizeof(jmp))) {
-        std::println("[-] Failed to write jmp hook");
+        spdlog::error("Failed to write jmp hook at 0x{:X}", exNtCloseAddr);
         return false;
     }
 
@@ -73,11 +76,16 @@ inline bool K32Context::InvokeK32Routine(T* outResult, uintptr_t functionAddress
         *outResult = reinterpret_cast<FN>(&NtAddAtom)(args...);
     }
 
-    return driver->WriteMappedMemory(exNtCloseAddr, origin, sizeof(jmp));
+    if (!driver->WriteMappedMemory(exNtCloseAddr, origin, sizeof(jmp))) {
+        spdlog::error("Failed to restore original bytes at 0x{:X}", exNtCloseAddr);
+        return false;
+    }
+
+    return true;
 }
 
 template <typename... A>
-inline bool K32Context::InvokeK32Routine(uintptr_t functionAddress, const A... args)
+inline bool K32Context::InvokeK32Routine(uintptr_t functionAddress, A... args)
 {
     return InvokeK32Routine<void>(static_cast<void*>(nullptr), functionAddress, args...);
 }

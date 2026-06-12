@@ -6,6 +6,7 @@
 #include <vuln/drivers/basic_vuln_driver.hpp>
 
 #include <vector>
+#include <spdlog/spdlog.h>
 
 K32ModuleParser::K32ModuleParser(const BasicVulnDriver& driver, std::shared_ptr<K32Module> k32Module)
     : driver(driver)
@@ -17,7 +18,7 @@ uintptr_t K32ModuleParser::FindAbsoluteAddr(const char* pattern, const char* mas
 {
     const auto instrAddr = FindPatternAddr(pattern, mask);
     if (!instrAddr) {
-        std::println("[-] Failed to find pattern address");
+        spdlog::error("Address for pattern (mask: {}) not found", mask);
         return 0;
     }
 

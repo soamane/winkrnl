@@ -24,13 +24,13 @@ uintptr_t K32Context::AllocatePool(POOL_TYPE poolType, std::size_t size)
 {
     static const auto exAllocPool = k32Module->GetK32ExportProcAddress("ExAllocatePoolWithTag");
     if (!exAllocPool) {
-        std::println("[-] Failed to get export proc address");
+        spdlog::error("Failed to get export address for 'ExAllocatePoolWithTag'");
         return 0;
     }
 
     uintptr_t allocAddress = 0;
     if (!InvokeK32Routine(&allocAddress, exAllocPool, poolType, size, 'lnrk')) {
-        std::println("[-] Failed to invoke kernel routine");
+        spdlog::error("Failed to invoke 'ExAllocatePoolWithTag'");
         return 0;
     }
 
@@ -41,8 +41,8 @@ bool K32Context::FreePool(uintptr_t address)
 {
     static const auto exFreePool = k32Module->GetK32ExportProcAddress("ExFreePool");
     if (!exFreePool) {
-        std::println("[-] Failed to get export proc address");
-        return 0;
+        spdlog::error("Failed to get export address for 'ExFreePool'");
+        return false;
     }
 
     return InvokeK32Routine(exFreePool, address);
@@ -52,13 +52,13 @@ bool K32Context::RtlDeleteElementGenericTableAvl(PVOID table, PVOID entry)
 {
     static const auto rtlDeleteElement = k32Module->GetK32ExportProcAddress("RtlDeleteElementGenericTableAvl");
     if (!rtlDeleteElement) {
-        std::println("[-] Failed to get export proc address");
-        return 0;
+        spdlog::error("Failed to get export address for 'RtlDeleteElementGenericTableAvl'");
+        return false;
     }
 
     bool retval = false;
     if (!InvokeK32Routine(&retval, rtlDeleteElement, table, entry)) {
-        std::println("[-] Failed to invoke RtlDeleteElementGenericTableAvl routine");
+        spdlog::error("Failed to invoke 'RtlDeleteElementGenericTableAvl'");
         return false;
     }
 
@@ -69,13 +69,13 @@ PVOID K32Context::RtlLookupElementGenericTableAvl(PRTL_AVL_TABLE table, PVOID bu
 {
     static const auto rtlLookupElement = k32Module->GetK32ExportProcAddress("RtlLookupElementGenericTableAvl");
     if (!rtlLookupElement) {
-        std::println("[-] Failed to get export proc address");
-        return 0;
+        spdlog::error("Failed to get export address for 'RtlLookupElementGenericTableAvl'");
+        return nullptr;
     }
 
     PVOID retval = nullptr;
     if (!InvokeK32Routine(&retval, rtlLookupElement, table, buffer)) {
-        std::println("[-] Failed to invoke RtlLookupElementGenericTableAvl routine");
+        spdlog::error("Failed to invoke 'RtlLookupElementGenericTableAvl'");
         return nullptr;
     }
 

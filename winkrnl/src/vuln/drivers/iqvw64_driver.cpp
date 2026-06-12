@@ -1,6 +1,6 @@
 ﻿#include "iqvw64_driver.hpp"
 
-#include <print>
+#include <spdlog/spdlog.h>
 #include <vulnerables/iqvw64_data.hpp>
 
 Iqvw64Driver::Iqvw64Driver(std::string_view symbLink)
@@ -8,7 +8,7 @@ Iqvw64Driver::Iqvw64Driver(std::string_view symbLink)
 {
 }
 
-uintptr_t Iqvw64Driver::GetTimeStamp() const
+ULONG Iqvw64Driver::GetTimeStamp() const
 {
     return 0x5284EAC3;
 }
@@ -65,10 +65,10 @@ bool Iqvw64Driver::KeUnmapIoSpace(uintptr_t virtualAddr, std::size_t size) const
     request.size = size;
 
     if (!SendIoRequest<UnmapIoSpaceRequest>(0x80862007, request)) {
-        std::println("[-] Failed to unmap address: 0x{:X}", virtualAddr);
+        spdlog::error("Failed to unmap address: 0x{:X}", virtualAddr);
         return false;
     }
-    
+
     return true;
 }
 
@@ -95,7 +95,7 @@ uintptr_t Iqvw64Driver::KeMapIoSpace(uintptr_t physicalAddr, std::size_t size) c
     request.size = size;
 
     if (!SendIoRequest<MapIoSpaceRequest>(0x80862007, request)) {
-        std::println("[-] Failed to map io space for physical address: 0x{:X}", physicalAddr);
+        spdlog::error("Failed to map io space for physical address: 0x{:X}", physicalAddr);
         return 0;
     }
 
@@ -120,7 +120,7 @@ uintptr_t Iqvw64Driver::KeGetPhysicalAddress(uintptr_t virtualAddr) const
     request.virtualAddr = virtualAddr;
 
     if (!SendIoRequest<Virtual2PhysicalRequest>(0x80862007, request)) {
-        std::println("[-] Failed to translate virtualAddr to physical");
+        spdlog::error("Failed to translate virtual address 0x{:X} to physical", virtualAddr);
         return 0;
     }
 

@@ -5,8 +5,10 @@
 #include <DbgHelp.h>
 #include <psapi.h>
 
+#include <spdlog/spdlog.h>
+
 K32Module::K32Module(const BasicVulnDriver& driver, std::string_view moduleName)
-    : driver(std::move(driver))
+    : driver(driver)
     , moduleName(moduleName)
     , moduleSize(0)
     , moduleBase(0)
@@ -34,18 +36,19 @@ uintptr_t K32Module::GetK32ModuleBaseAddress() const
 uintptr_t K32Module::GetK32ExportProcAddress(std::string_view funcName) const
 {
     if (auto it = foundExports.find(funcName.data()); it != foundExports.end()) {
+        spdlog::info("Cache hit for export '{}': 0x{:X}", funcName, it->second);
         return it->second;
     }
 
     IMAGE_DOS_HEADER dosHeader { };
     if (!driver.ReadMemory(moduleBase, &dosHeader, sizeof(dosHeader)) || dosHeader.e_magic != IMAGE_DOS_SIGNATURE) {
-        std::println("[-] Invalid DOS header");
+        spdlog::error("[{}] Invalid DOS header", __FUNCTION__);
         return 0;
     }
 
     IMAGE_NT_HEADERS64 ntHeaders { };
     if (!driver.ReadMemory(moduleBase + dosHeader.e_lfanew, &ntHeaders, sizeof(ntHeaders)) || ntHeaders.Signature != IMAGE_NT_SIGNATURE) {
-        std::println("[-] Invalid NT headers");
+        spdlog::error("[{}] Invalid NT headers", __FUNCTION__);
         return 0;
     }
 
@@ -54,7 +57,7 @@ uintptr_t K32Module::GetK32ExportProcAddress(std::string_view funcName) const
     const auto exDirBaseRva = exportDataDir.VirtualAddress;
 
     if (exDirSize == 0 || exDirBaseRva == 0) {
-        std::println("[-] No export directory");
+        spdlog::error("[{}] No export directory", __FUNCTION__);
         return 0;
     }
 
@@ -64,12 +67,12 @@ uintptr_t K32Module::GetK32ExportProcAddress(std::string_view funcName) const
         deleter);
 
     if (!exportDirRaw) {
-        std::println("[-] Failed to allocate export directory buffer");
+        spdlog::error("Failed to allocate export directory buffer");
         return 0;
     }
 
     if (!driver.ReadMemory(moduleBase + exDirBaseRva, exportDirRaw.get(), exDirSize)) {
-        std::println("[-] Failed to read export directory");
+        spdlog::error("Failed to read export directory");
         return 0;
     }
 
@@ -91,12 +94,12 @@ uintptr_t K32Module::GetK32ExportProcAddress(std::string_view funcName) const
         const DWORD functionRva = functionTable[ordinal];
 
         if (functionRva == 0) {
-            std::println("[-] Export '{}' has null RVA", funcName);
+            spdlog::error("Export '{}' has null RVA", funcName);
             return 0;
         }
 
         const uintptr_t functionAddr = moduleBase + functionRva;
-        std::println("[+] Export '{}' found at 0x{:X}", funcName, functionAddr);
+        spdlog::info("Export '{}' found at 0x{:X}", funcName, functionAddr);
 
         foundExports.emplace(funcName, functionAddr);
         return functionAddr;
@@ -111,12 +114,11 @@ bool K32Module::InitModuleInfo() const
     DWORD cbNeeded;
 
     if (!K32EnumDeviceDrivers(drivers, sizeof(drivers), &cbNeeded)) {
-        std::println("[-] Failed to enumerate device drivers");
+        spdlog::error("Failed to enumerate device drivers");
         return false;
     }
 
     const DWORD cDrivers = cbNeeded / sizeof(drivers[0]);
-
     for (DWORD i = 0; i < cDrivers; ++i) {
         char baseName[256];
         if (!K32GetDeviceDriverBaseNameA(drivers[i], baseName, sizeof(baseName))) {
@@ -128,26 +130,30 @@ bool K32Module::InitModuleInfo() const
         }
 
         moduleBase = reinterpret_cast<uintptr_t>(drivers[i]);
-
         IMAGE_DOS_HEADER dosHeader { };
         if (!driver.ReadMemory(moduleBase, &dosHeader, sizeof(dosHeader))) {
+            spdlog::error("Failed to read DOS header for '{}'", moduleName);
             return false;
         }
 
         if (dosHeader.e_magic != IMAGE_DOS_SIGNATURE) {
+            spdlog::error("Invalid DOS signature for '{}'", moduleName);
             return false;
         }
 
         IMAGE_NT_HEADERS64 ntHeaders { };
         if (!driver.ReadMemory(moduleBase + dosHeader.e_lfanew, &ntHeaders, sizeof(ntHeaders))) {
+            spdlog::error("Failed to read NT headers for '{}'", moduleName);
             return false;
         }
 
         if (ntHeaders.Signature != IMAGE_NT_SIGNATURE) {
+            spdlog::error("Invalid NT signature for '{}'", moduleName);
             return false;
         }
 
         moduleSize = ntHeaders.OptionalHeader.SizeOfImage;
+        spdlog::info("Module '{}' initialized: base=0x{:X}, size=0x{:X}", moduleName, moduleBase, moduleSize);
         return true;
     }
 

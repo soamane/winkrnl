@@ -1,9 +1,9 @@
 ﻿#include "service_registry.hpp"
 
+#include <spdlog/spdlog.h>
 #include <utils/cmn_utils.hpp>
 
 #include <Windows.h>
-#include <print>
 
 ServiceRegistry::ServiceRegistry(const std::filesystem::path& drvPath)
     : drvPath(drvPath)
@@ -19,7 +19,7 @@ bool ServiceRegistry::CreateRegistryEntry() const
         HKEY_LOCAL_MACHINE, subKey.c_str(), 0, nullptr,
         REG_OPTION_NON_VOLATILE, KEY_WRITE, nullptr, &hKey, nullptr);
     if (status != ERROR_SUCCESS) {
-        std::println("[-] Failed to create registry key (0x{:X})", status);
+        spdlog::error("Failed to create registry key '{}' (0x{:X})", subKey, status);
         return false;
     }
 
@@ -29,7 +29,7 @@ bool ServiceRegistry::CreateRegistryEntry() const
         static_cast<DWORD>(ntLink.size() + 1));
     if (status != ERROR_SUCCESS) {
         RegCloseKey(hKey);
-        std::println("[-] Failed to set ImagePath (0x{:X})", status);
+        spdlog::error("Failed to set ImagePath '{}' (0x{:X})", ntLink, status);
         return false;
     }
 
@@ -38,7 +38,7 @@ bool ServiceRegistry::CreateRegistryEntry() const
         reinterpret_cast<const BYTE*>(&svcType), sizeof(svcType));
     if (status != ERROR_SUCCESS) {
         RegCloseKey(hKey);
-        std::println("[-] Failed to set Type (0x{:X})", status);
+        spdlog::error("Failed to set Type (0x{:X})", status);
         return false;
     }
 
@@ -47,7 +47,7 @@ bool ServiceRegistry::CreateRegistryEntry() const
         reinterpret_cast<const BYTE*>(&startType), sizeof(startType));
     if (status != ERROR_SUCCESS) {
         RegCloseKey(hKey);
-        std::println("[-] Failed to set Start (0x{:X})", status);
+        spdlog::error("Failed to set Start (0x{:X})", status);
         return false;
     }
 
@@ -64,7 +64,7 @@ bool ServiceRegistry::DeleteRegistryEntry() const
         0);
 
     if (status != ERROR_SUCCESS && status != ERROR_FILE_NOT_FOUND) {
-        std::println("[-] Failed to delete registry key (0x{:X})", status);
+        spdlog::error("Failed to delete registry key '{}' (0x{:X})", subKey, status);
         return false;
     }
 

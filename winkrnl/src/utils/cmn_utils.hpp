@@ -6,7 +6,6 @@
 #include <string>
 
 namespace Utils::Common {
-uintptr_t GenerateRandomTimeStamp();
 std::string GenerateRandomString(std::size_t length);
 }
 
