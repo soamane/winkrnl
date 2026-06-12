@@ -5,6 +5,7 @@
 #include <vuln/vuln_driver_loader.hpp>
 
 #include <kernel/k32_context.hpp>
+#include <kernel/k32_module.hpp>
 #include <kernel/k32_parser.hpp>
 
 #include <mapper/driver_mapper.hpp>
@@ -46,15 +47,16 @@ int main(int argc, char** argv)
         return EXIT_FAILURE;
     }
 
-    auto k32ctx = std::make_shared<K32Context>(iqvw64);
+    auto k32Module = std::make_shared<K32Module>(*iqvw64, "ntoskrnl.exe");
+    auto k32ctx = std::make_shared<K32Context>(iqvw64, k32Module);
 
-    DriverMapper driverMapper = DriverMapper(k32ctx);
+    DriverMapper driverMapper = DriverMapper(k32ctx, k32Module);
     if (!driverMapper.Map((void*)driverBytes.data())) {
         std::println("[-] Failed to mmap driver");
         return EXIT_FAILURE;
     }
 
-    auto vulnTraceCleaner = VulnTraceCleaner(k32ctx);
+    auto vulnTraceCleaner = VulnTraceCleaner(k32ctx, k32Module);
     if (!vulnTraceCleaner.Cleanup()) {
         std::println("[-] Failed to cleanup vulnerable driver traces");
         return EXIT_FAILURE;

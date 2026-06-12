@@ -1,14 +1,15 @@
 ﻿#include "k32_parser.hpp"
 
-#include <kernel/k32_context.hpp>
+#include "k32_context.hpp"
+#include "k32_module.hpp"
+
 #include <vuln/drivers/basic_vuln_driver.hpp>
 
 #include <vector>
 
-K32ModuleParser::K32ModuleParser(std::shared_ptr<K32Context> k32ctx, std::string_view moduleName)
-    : moduleBase(k32ctx->GetK32ModuleAddr(moduleName))
-    , moduleSize(k32ctx->GetK32ModuleSize(moduleName))
-    , driver(k32ctx->GetDriver())
+K32ModuleParser::K32ModuleParser(const BasicVulnDriver& driver, std::shared_ptr<K32Module> k32Module)
+    : driver(driver)
+    , k32Module(std::move(k32Module))
 {
 }
 
@@ -25,8 +26,11 @@ uintptr_t K32ModuleParser::FindAbsoluteAddr(const char* pattern, const char* mas
 
 uintptr_t K32ModuleParser::FindPatternAddr(const char* pattern, const char* mask) const
 {
+    const auto& moduleSize = k32Module->GetK32ModuleSize();
+    const auto& moduleBaseAddress = k32Module->GetK32ModuleBaseAddress();
+
     std::vector<std::uint8_t> buffer(moduleSize);
-    if (!driver.ReadMemory(moduleBase, buffer.data(), moduleSize)) {
+    if (!driver.ReadMemory(moduleBaseAddress, buffer.data(), moduleSize)) {
         return 0;
     }
 
@@ -46,7 +50,7 @@ uintptr_t K32ModuleParser::FindPatternAddr(const char* pattern, const char* mask
         }
 
         if (found) {
-            return moduleBase + i;
+            return moduleBaseAddress + i;
         }
     }
 

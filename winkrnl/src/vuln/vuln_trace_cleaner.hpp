@@ -7,22 +7,24 @@
 #include <memory>
 #include <string_view>
 
+class K32Module;
 class K32Context;
 class K32ModuleParser;
 
 class VulnTraceCleaner {
 public:
-    VulnTraceCleaner(std::shared_ptr<K32Context> k32ctx);
+    VulnTraceCleaner(std::shared_ptr<K32Context> k32ctx, std::shared_ptr<K32Module> k32Module);
 
 public:
     bool Cleanup() const;
 
 private:
-    bool CleanupPiDDBCacheList(const K32ModuleParser& moduleParser) const;
-    bool CleanupPiDDBCacheTable(const K32ModuleParser& moduleParser) const;
+    bool CleanupPiDDBCacheList() const;
+    bool CleanupPiDDBCacheTable() const;
 
 private:
     std::shared_ptr<K32Context> k32ctx;
+    std::unique_ptr<K32ModuleParser> k32ModuleParser;
 };
 
 #endif // !VULN_TRACE_CLEANER_HPP

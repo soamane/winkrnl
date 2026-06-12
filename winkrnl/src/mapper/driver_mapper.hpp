@@ -9,10 +9,11 @@
 #include <windows.h>
 
 class K32Context;
+class K32Module;
 
 class DriverMapper {
 public:
-    explicit DriverMapper(std::shared_ptr<K32Context> k32ctx);
+    DriverMapper(std::shared_ptr<K32Context> k32ctx, std::shared_ptr<K32Module> k32Module);
 
 public:
     bool Map(void* fileBytes);
@@ -24,6 +25,7 @@ private:
 
 private:
     std::shared_ptr<K32Context> k32ctx;
+    std::shared_ptr<K32Module> k32Module;
 };
 
 #endif // !DRIVER_MAPPER_HPP

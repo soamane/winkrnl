@@ -6,12 +6,12 @@
 #include <memory>
 #include <string>
 
-class K32Context;
+class K32Module;
 class BasicVulnDriver;
 
 class K32ModuleParser {
 public:
-    K32ModuleParser(std::shared_ptr<K32Context> k32ctx, std::string_view moduleName);
+    K32ModuleParser(const BasicVulnDriver& driver, std::shared_ptr<K32Module> k32Module);
 
 public:
     uintptr_t FindAbsoluteAddr(
@@ -25,9 +25,8 @@ private:
     uintptr_t ResolveAbsoluteAddr(uintptr_t instrAddr, std::size_t instrOffset, std::size_t instrSize) const;
 
 private:
-    const uintptr_t moduleBase;
-    const std::size_t moduleSize;
     const BasicVulnDriver& driver;
+    std::shared_ptr<K32Module> k32Module;
 };
 
 #endif // !K32_MODULE_PARSER_HPP

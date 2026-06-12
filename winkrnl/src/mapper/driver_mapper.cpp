@@ -1,9 +1,11 @@
 ﻿#include "driver_mapper.hpp"
 
 #include <kernel/k32_context.hpp>
+#include <kernel/k32_module.hpp>
 
-DriverMapper::DriverMapper(std::shared_ptr<K32Context> k32ctx)
+DriverMapper::DriverMapper(std::shared_ptr<K32Context> k32ctx, std::shared_ptr<K32Module> k32Module)
     : k32ctx(std::move(k32ctx))
+    , k32Module(std::move(k32Module))
 {
 }
 
@@ -100,27 +102,11 @@ void DriverMapper::CopyToMemory(uintptr_t baseAddress, PIMAGE_NT_HEADERS ntHeade
 
 bool DriverMapper::ResolveImports(const std::vector<Utils::PE::Import>& imports)
 {
-    const auto ntoskrnl = k32ctx->GetK32ModuleAddr("ntoskrnl.exe");
-    if (!ntoskrnl) {
-        std::println("[-] Failed to get ntoskrnl base address");
-        return false;
-    }
-
     for (const auto& import : imports) {
-        const auto moduleBase = k32ctx->GetK32ModuleAddr(import.name);
-        if (!moduleBase) {
-            std::println("[-] Failed to get module '{}' base address", import.name);
-            return false;
-        }
+        const auto currentModule = K32Module(k32ctx->GetDriver(), import.name);
 
         for (auto& thunk : import.thunks) {
-            auto functionAddress = k32ctx->GetK32ExportProcAddr(moduleBase, thunk.name);
-            if (!functionAddress && moduleBase != ntoskrnl) {
-                std::println("[*] '{}' not found in '{}', trying ntoskrnl...", thunk.name, import.name);
-
-                functionAddress = k32ctx->GetK32ExportProcAddr(ntoskrnl, thunk.name);
-            }
-
+            auto functionAddress = currentModule.GetK32ExportProcAddress(thunk.name);
             if (!functionAddress) {
                 std::println("[-] Failed to resolve: {}!{}", import.name, thunk.name);
                 return false;

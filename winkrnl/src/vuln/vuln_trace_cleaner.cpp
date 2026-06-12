@@ -8,20 +8,20 @@
 #include <ntdll.hpp>
 #include <print>
 
-VulnTraceCleaner::VulnTraceCleaner(std::shared_ptr<K32Context> k32ctx)
+VulnTraceCleaner::VulnTraceCleaner(std::shared_ptr<K32Context> k32ctx, std::shared_ptr<K32Module> k32Module)
     : k32ctx(std::move(k32ctx))
+    , k32ModuleParser(std::make_unique<K32ModuleParser>(this->k32ctx->GetDriver(), std::move(k32Module)))
 {
 }
 
 bool VulnTraceCleaner::Cleanup() const
 {
-    static const auto ntkrnlParser = K32ModuleParser(k32ctx, "ntoskrnl.exe");
-    if (!CleanupPiDDBCacheList(ntkrnlParser)) {
+    if (!CleanupPiDDBCacheList()) {
         std::println("[-] Failed to cleanup vulnerable driver from PiDDBCacheList");
         return false;
     }
 
-    if (!CleanupPiDDBCacheTable(ntkrnlParser)) {
+    if (!CleanupPiDDBCacheTable()) {
         std::println("[-] Failed to cleanup vulnerable driver from PiDDBCacheTable");
         return false;
     }
@@ -29,9 +29,9 @@ bool VulnTraceCleaner::Cleanup() const
     return true;
 }
 
-bool VulnTraceCleaner::CleanupPiDDBCacheList(const K32ModuleParser& moduleParser) const
+bool VulnTraceCleaner::CleanupPiDDBCacheList() const
 {
-    static const auto _PiDDBCacheList = moduleParser.FindAbsoluteAddr(
+    static const auto _PiDDBCacheList = k32ModuleParser->FindAbsoluteAddr(
         "\x48\x8D\x15\x00\x00\x00\x00\x48\x8B\x0D\x00\x00\x00\x00\x00\x00\x00\x74",
         "xxx????xxx???????x", 3, 7);
 
@@ -77,9 +77,9 @@ bool VulnTraceCleaner::CleanupPiDDBCacheList(const K32ModuleParser& moduleParser
     return true;
 }
 
-bool VulnTraceCleaner::CleanupPiDDBCacheTable(const K32ModuleParser& moduleParser) const
+bool VulnTraceCleaner::CleanupPiDDBCacheTable() const
 {
-    static const auto _PiDDBCacheTable = moduleParser.FindAbsoluteAddr(
+    static const auto _PiDDBCacheTable = k32ModuleParser->FindAbsoluteAddr(
         "\x48\x8D\x0D\x00\x00\x00\x00\x45\x33\xF6\x48\x89\x44\x24",
         "xxx????xxxxxxx", 3, 7);
 

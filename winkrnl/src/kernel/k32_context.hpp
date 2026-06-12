@@ -3,17 +3,20 @@
 #ifndef K32_CONTEXT_HPP
 #define K32_CONTEXT_HPP
 
-#include <vuln/drivers/basic_vuln_driver.hpp>
+#include "k32_module.hpp"
 
 #include <ntdll.hpp>
+#include <vuln/drivers/basic_vuln_driver.hpp>
 
 #include <memory>
 #include <print>
 #include <string_view>
 
+class K32Module;
+
 class K32Context {
 public:
-    explicit K32Context(std::shared_ptr<BasicVulnDriver> driver);
+    K32Context(std::shared_ptr<BasicVulnDriver> driver, std::shared_ptr<K32Module> k32Module);
     ~K32Context();
 
 public:
@@ -32,14 +35,9 @@ public:
     template <typename... A>
     inline bool InvokeK32Routine(uintptr_t functionAddress, const A... args);
 
-public:
-    uintptr_t GetK32ModuleAddr(std::string_view moduleName);
-    std::size_t GetK32ModuleSize(std::string_view moduleName);
-    uintptr_t GetK32ExportProcAddr(uintptr_t moduleBase, std::string_view functionName);
-    uintptr_t GetK32ExportProcAddr(std::string_view moduleName, std::string_view functionName);
-
 private:
     std::shared_ptr<BasicVulnDriver> driver;
+    std::shared_ptr<K32Module> k32Module;
 };
 
 #endif // !K32_CONTEXT_HPP
@@ -50,7 +48,7 @@ inline bool K32Context::InvokeK32Routine(T* outResult, uintptr_t functionAddress
     static uint8_t jmp[] = { 0x48, 0xB8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xE0 };
     *reinterpret_cast<uintptr_t*>(&jmp[2]) = functionAddress;
 
-    static const auto exNtCloseAddr = GetK32ExportProcAddr("ntoskrnl.exe", "NtAddAtom");
+    static const auto exNtCloseAddr = k32Module->GetK32ExportProcAddress("NtAddAtom");
     if (!exNtCloseAddr) {
         std::println("[-] Failed to get address of export function");
         return false;
