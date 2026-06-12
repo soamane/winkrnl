@@ -89,6 +89,17 @@ Adding a new kernel call in winkrnl requires no new plumbing — pass the addres
 
 winkrnl walks `PsLoadedModuleList` and zeroes `BaseDllName` in the driver's `LDR_DATA_TABLE_ENTRY` before unloading. When the kernel calls `MiRememberUnloadedDriver` during unload, it checks `Name.Length > 0` before recording the entry — an empty name means the driver is never written to `MmUnloadedDrivers`.
 
+```ams
+_UNKNOWN **__fastcall MiRememberUnloadedDriver(const void **a1, __int64 a2, unsigned int a3)
+{
+...
+  result = &retaddr;
+  v4 = a3;
+  if ( *(_WORD *)a1 ) <-- Check  if (Name.Length > 0)
+  {
+    v7 = (char *)MmUnloadedDrivers;
+    if ( MmUnloadedDrivers )
+```
 ### RAII throughout
 
 kdmapper does manual cleanup with raw `if` chains. winkrnl uses RAII for every resource:
