@@ -9,7 +9,7 @@
 
 VulnDriverLoader::VulnDriverLoader(std::shared_ptr<BasicVulnDriver> driver)
     : isLoaded(false)
-    , drvPath(Utils::FS::GenerateRandomTempPath(".tmp"))
+    , drvPath(std::filesystem::temp_directory_path() / driver->GetName())
     , ntPath(L"\\Registry\\Machine\\SYSTEM\\CurrentControlSet\\Services\\" + drvPath.stem().wstring())
     , driver(std::move(driver))
     , registry(std::make_unique<ServiceRegistry>(drvPath))
