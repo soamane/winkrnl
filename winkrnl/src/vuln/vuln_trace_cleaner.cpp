@@ -26,6 +26,11 @@ bool VulnTraceCleaner::Cleanup() const
         return false;
     }
 
+    if (!CleanupPsLoadedModuleList()) {
+        spdlog::error("Failed to cleanup vulnerable driver from PsLoadedModuleList");
+        return false;
+    }
+
     return true;
 }
 
@@ -67,8 +72,6 @@ bool VulnTraceCleaner::CleanupPiDDBCacheList() const
                 spdlog::error("Failed to rewrite node Blink");
                 return false;
             }
-
-            spdlog::info("Vulnerable driver unlinked from PiDDBCacheList");
         }
 
         link = flink;
@@ -111,6 +114,46 @@ bool VulnTraceCleaner::CleanupPiDDBCacheTable() const
         return false;
     }
 
-    spdlog::info("Vulnerable driver entry removed from PiDDBCacheTable");
     return true;
+}
+
+bool VulnTraceCleaner::CleanupPsLoadedModuleList() const
+{
+    static const auto _PsLoadedModuleList = k32ModuleParser->FindAbsoluteAddr(
+        "\x48\x8B\x1D\x00\x00\x00\x00\x45\x33\xFF\x41\x8B\xF0",
+        "xxx????xxxxxx", 3, 7);
+
+    if (!_PsLoadedModuleList) {
+        spdlog::error("_PsLoadedModuleList not found");
+        return false;
+    }
+
+    const auto& driver = k32ctx->GetDriver();
+    std::wstring driverName(driver.GetName().begin(), driver.GetName().end());
+
+    uintptr_t flink = 0;
+    if (!driver.ReadMemory(_PsLoadedModuleList, &flink, sizeof(uintptr_t))) {
+        return false;
+    }
+
+    while (flink != _PsLoadedModuleList) {
+        UNICODE_STRING name = { 0 };
+        driver.ReadMemory(flink + offsetof(LDR_DATA_TABLE_ENTRY, BaseDllName), &name, sizeof(name));
+
+        if (name.Length > 0 && name.Buffer) {
+            std::wstring moduleName(name.Length / 2, L'\0');
+            driver.ReadMemory(reinterpret_cast<uintptr_t>(name.Buffer), moduleName.data(), name.Length);
+
+            if (_wcsicmp(moduleName.c_str(), driverName.c_str()) == 0) {
+                UNICODE_STRING zeroed = { 0 };
+                return driver.WriteMemory(flink + offsetof(LDR_DATA_TABLE_ENTRY, BaseDllName), &zeroed, sizeof(zeroed));
+            }
+        }
+
+        if (!driver.ReadMemory(flink, &flink, sizeof(uintptr_t))) {
+            break;
+        }
+    }
+
+    return false;
 }
