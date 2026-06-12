@@ -1,10 +1,13 @@
 ﻿#include "basic_vuln_driver.hpp"
 
+#include <utils/cmn_utils.hpp>
+
 #include <print>
 
 BasicVulnDriver::BasicVulnDriver(std::string_view symbLink)
     : hDevice(INVALID_HANDLE_VALUE)
     , init(false)
+    , name(Utils::Common::GenerateRandomString(16))
     , symbLink(symbLink)
 {
 }
@@ -35,6 +38,11 @@ void BasicVulnDriver::CloseDevice()
 HANDLE BasicVulnDriver::GetDevice() const
 {
     return hDevice;
+}
+
+const std::string& BasicVulnDriver::GetName() const
+{
+    return name;
 }
 
 bool BasicVulnDriver::ReadMemory(uintptr_t address, void* buffer, std::size_t size) const

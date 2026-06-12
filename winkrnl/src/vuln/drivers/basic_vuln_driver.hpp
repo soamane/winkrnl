@@ -18,6 +18,7 @@ public:
     void CloseDevice();
 
     HANDLE GetDevice() const;
+    const std::string& GetName() const;
 
 public:
     virtual uintptr_t GetTimeStamp() const = 0;
@@ -41,6 +42,7 @@ protected:
 private:
     HANDLE hDevice;
     bool init;
+    const std::string name;
     const std::string symbLink;
 };
 
