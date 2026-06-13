@@ -8,12 +8,16 @@
 #include <map>
 
 class BasicVulnDriver;
+class K32ModuleParser;
 
 class K32Module {
 public:
     K32Module(const BasicVulnDriver& driver, std::string_view moduleName);
+    ~K32Module();
 
 public:
+    const K32ModuleParser& GetModuleParser() const;
+
     std::size_t GetK32ModuleSize() const;
     std::string GetK32ModuleName() const;
     std::uintptr_t GetK32ModuleBaseAddress() const;
@@ -26,6 +30,7 @@ private:
 
 private:
     const BasicVulnDriver& driver;
+    std::unique_ptr<K32ModuleParser> moduleParser;
 
     std::string moduleName;
     mutable std::size_t moduleSize;

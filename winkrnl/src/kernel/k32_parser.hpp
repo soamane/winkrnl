@@ -11,7 +11,7 @@ class BasicVulnDriver;
 
 class K32ModuleParser {
 public:
-    K32ModuleParser(const BasicVulnDriver& driver, std::shared_ptr<K32Module> k32Module);
+    K32ModuleParser(const BasicVulnDriver& driver, K32Module* parent);
 
 public:
     uintptr_t FindAbsoluteAddr(
@@ -26,7 +26,7 @@ private:
 
 private:
     const BasicVulnDriver& driver;
-    std::shared_ptr<K32Module> k32Module;
+    K32Module* parent;
 };
 
 #endif // !K32_MODULE_PARSER_HPP

@@ -1,5 +1,6 @@
 ﻿#include "k32_module.hpp"
 
+#include "k32_parser.hpp"
 #include <vuln/drivers/basic_vuln_driver.hpp>
 
 #include <DbgHelp.h>
@@ -9,6 +10,7 @@
 
 K32Module::K32Module(const BasicVulnDriver& driver, std::string_view moduleName)
     : driver(driver)
+    , moduleParser(std::make_unique<K32ModuleParser>(driver, this))
     , moduleName(moduleName)
     , moduleSize(0)
     , moduleBase(0)
@@ -16,6 +18,15 @@ K32Module::K32Module(const BasicVulnDriver& driver, std::string_view moduleName)
     if (!InitModuleInfo()) {
         throw std::runtime_error("Failed to initialize module info");
     }
+}
+
+K32Module::~K32Module()
+{
+}
+
+const K32ModuleParser& K32Module::GetModuleParser() const
+{
+    return *moduleParser;
 }
 
 std::size_t K32Module::GetK32ModuleSize() const

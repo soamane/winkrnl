@@ -8,9 +8,9 @@
 #include <vector>
 #include <spdlog/spdlog.h>
 
-K32ModuleParser::K32ModuleParser(const BasicVulnDriver& driver, std::shared_ptr<K32Module> k32Module)
+K32ModuleParser::K32ModuleParser(const BasicVulnDriver& driver, K32Module* parent)
     : driver(driver)
-    , k32Module(std::move(k32Module))
+    , parent(parent)
 {
 }
 
@@ -27,8 +27,8 @@ uintptr_t K32ModuleParser::FindAbsoluteAddr(const char* pattern, const char* mas
 
 uintptr_t K32ModuleParser::FindPatternAddr(const char* pattern, const char* mask) const
 {
-    const auto& moduleSize = k32Module->GetK32ModuleSize();
-    const auto& moduleBaseAddress = k32Module->GetK32ModuleBaseAddress();
+    const auto& moduleSize = parent->GetK32ModuleSize();
+    const auto& moduleBaseAddress = parent->GetK32ModuleBaseAddress();
 
     std::vector<std::uint8_t> buffer(moduleSize);
     if (!driver.ReadMemory(moduleBaseAddress, buffer.data(), moduleSize)) {
