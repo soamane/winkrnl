@@ -9,7 +9,6 @@
 
 class K32Module;
 class K32Context;
-class K32ModuleParser;
 
 class VulnTraceCleaner {
 public:
@@ -22,10 +21,12 @@ private:
     bool CleanupPiDDBCacheList() const;
     bool CleanupPiDDBCacheTable() const;
     bool CleanupPsLoadedModuleList() const;
+    bool CleanupKernelHashBucketList() const;
+
 
 private:
     std::shared_ptr<K32Context> k32ctx;
-    std::unique_ptr<K32ModuleParser> k32ModuleParser;
+    std::shared_ptr<K32Module> k32Module;
 };
 
 #endif // !VULN_TRACE_CLEANER_HPP

